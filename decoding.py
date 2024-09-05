@@ -1,3 +1,3 @@
-class VideoDecoder:
-    def process_encoded():
+class Decoder:
+    def decode():
         pass
