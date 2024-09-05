@@ -1,31 +1,32 @@
 import numpy as np
 import cv2
 
-DOWNSAMPLE_FACTOR = 4
-BLOCK_SIZE = 8
-SHIFT = 128
-QUANTIZATION_MATRIX_LUMINANCE = np.float32([[16,11,10,16,24,40,51,61],
-                                            [12,12,14,19,26,58,60,55],
-                                            [14,13,16,24,40,57,69,56],
-                                            [14,17,22,29,51,87,80,62],
-                                            [18,22,37,56,68,109,103,77],
-                                            [24,35,55,64,81,104,113,92],
-                                            [49,64,78,87,103,121,120,101],
-                                            [72,92,95,98,112,100,103,99]])
-QUANTIZATION_MATRIX_CROMINANCE = np.float32([[17,18,24,47,99,99,99,99],
-                                            [18,21,26,66,99,99,99,99],
-                                            [24,26,56,99,99,99,99,99],
-                                            [47,66,99,99,99,99,99,99],
-                                            [99,99,99,99,99,99,99,99],
-                                            [99,99,99,99,99,99,99,99],
-                                            [99,99,99,99,99,99,99,99],
-                                            [99,99,99,99,99,99,99,99]])
+class Constants:
+    DOWNSAMPLE_FACTOR = 4
+    BLOCK_SIZE = 8
+    SHIFT = 128
+    QUANTIZATION_MATRIX_LUMINANCE = np.float32([[16,11,10,16,24,40,51,61],
+                                                [12,12,14,19,26,58,60,55],
+                                                [14,13,16,24,40,57,69,56],
+                                                [14,17,22,29,51,87,80,62],
+                                                [18,22,37,56,68,109,103,77],
+                                                [24,35,55,64,81,104,113,92],
+                                                [49,64,78,87,103,121,120,101],
+                                                [72,92,95,98,112,100,103,99]])
+    QUANTIZATION_MATRIX_CROMINANCE = np.float32([[17,18,24,47,99,99,99,99],
+                                                [18,21,26,66,99,99,99,99],
+                                                [24,26,56,99,99,99,99,99],
+                                                [47,66,99,99,99,99,99,99],
+                                                [99,99,99,99,99,99,99,99],
+                                                [99,99,99,99,99,99,99,99],
+                                                [99,99,99,99,99,99,99,99],
+                                                [99,99,99,99,99,99,99,99]])
 
-def blockproc(image: np.ndarray, block_size: int, func):
+def blockproc(image: np.ndarray, block_size: int, func, dtype):
     h, w = image.shape
     if h % block_size != 0 or w % block_size != 0:
         raise ValueError("Image size must be a multiple of block size.")
-    output = np.zeros_like(image, dtype=np.float32)
+    output = np.zeros_like(image, dtype=dtype)
     for i in range(0, h, block_size):
         for j in range(0, w, block_size):
             block = image[i:i+block_size, j:j+block_size]
@@ -33,7 +34,7 @@ def blockproc(image: np.ndarray, block_size: int, func):
             output[i:i+block_size, j:j+block_size] = processed_block
     return output
 
-def zigzag_traverse(matrix: np.ndarray) -> np.ndarray:
+def zigzag_traverse(matrix: np.ndarray, dtype) -> np.ndarray:
     if matrix.shape[0] != matrix.shape[1]:
         raise ValueError("matrix must be square")
     n = matrix.shape[0]
@@ -55,23 +56,23 @@ def zigzag_traverse(matrix: np.ndarray) -> np.ndarray:
             result.extend(diag_elements)
         else:
             result.extend(diag_elements[::-1])
-    return np.array(result)
+    return np.array(result, dtype=dtype)
 
-def zigzag_block(matrix: np.ndarray, block_size: int, dtype=np.int32):
+def zigzag_block(matrix: np.ndarray, block_size: int, dtype):
     if matrix.shape[0] % block_size != 0 or matrix.shape[1] % block_size != 0:
         raise ValueError("Image size must be a multiple of block size.")
     h = int(matrix.shape[0] / block_size)
     w = int(matrix.shape[1] / block_size)
-    zig_zags = np.zeros((h*w, 64), dtype=dtype)
+    zig_zags = np.zeros((h*w, block_size*block_size), dtype=dtype)
     index = 0
     for i in range(h):
         for j in range(w):
             block = matrix[i*block_size:i*block_size+block_size, j*block_size:j*block_size+block_size]
-            zig_zags[index] = zigzag_traverse(block)
+            zig_zags[index] = zigzag_traverse(block, dtype)
             index += 1
     return zig_zags
 
-def run_length_encoding(array: np.ndarray, dtype = np.int8) -> np.ndarray:
+def run_length_encoding(array: np.ndarray, dtype) -> np.ndarray:
     if len(array) == 0:
         raise ValueError("run length encoding of empty array")
     rle = []
@@ -89,15 +90,15 @@ def run_length_encoding(array: np.ndarray, dtype = np.int8) -> np.ndarray:
     rle.append(count)
     return dtype(rle)
 
-def rle_matrix_rows(matrix: np.ndarray) -> np.ndarray:
+def rle_matrix_rows(matrix: np.ndarray, dtype) -> np.ndarray:
     rle_rows = []
     for i in range(matrix.shape[0]):
-        rle_rows.append(run_length_encoding(matrix[i]))
+        rle_rows.append(run_length_encoding(matrix[i], dtype))
     return np.array(rle_rows, dtype=object)
 
-def downsample_matrix(matrix: np.ndarray, downsample_factor):
+def downsample_matrix(matrix: np.ndarray, downsample_factor, dtype):
     size = int(matrix.shape[0]/downsample_factor), int(matrix.shape[1]/downsample_factor)
-    output = np.zeros(size)
+    output = np.zeros(size, dtype=dtype)
     for i in range(size[0]):
         for j in range(size[1]):
             miniblock = matrix[i*downsample_factor:i*downsample_factor+downsample_factor,
@@ -106,25 +107,25 @@ def downsample_matrix(matrix: np.ndarray, downsample_factor):
             output[i,j] = average
     return output
 
-def image2jpeg(image_name: str, rgb_image: np.ndarray) -> None:
+def image2jpeg(rgb_image: np.ndarray) -> None:
     ycbcr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     y, cb, cr = cv2.split(ycbcr_image)
     y = np.float32(y)
     # downsampling color
-    cb = downsample_matrix(cb, DOWNSAMPLE_FACTOR)
-    cr = downsample_matrix(cr, DOWNSAMPLE_FACTOR)
+    cb = downsample_matrix(cb, Constants.DOWNSAMPLE_FACTOR, np.float32)
+    cr = downsample_matrix(cr, Constants.DOWNSAMPLE_FACTOR, np.float32)
     # applying dct to blocks shifted
-    dct_y = blockproc(y - SHIFT, BLOCK_SIZE, cv2.dct)
-    dct_cb = blockproc(cb - SHIFT, BLOCK_SIZE, cv2.dct)
-    dct_cr = blockproc(cr - SHIFT, BLOCK_SIZE, cv2.dct)
+    dct_y = blockproc(y - Constants.SHIFT, Constants.BLOCK_SIZE, cv2.dct, np.float32)
+    dct_cb = blockproc(cb - Constants.SHIFT, Constants.BLOCK_SIZE, cv2.dct, np.float32)
+    dct_cr = blockproc(cr - Constants.SHIFT, Constants.BLOCK_SIZE, cv2.dct, np.float32)
     # quantization
-    dct_y_quantized = np.int32(blockproc(dct_y, BLOCK_SIZE, lambda x: x / QUANTIZATION_MATRIX_LUMINANCE))
-    dct_cb_quantized = np.int32(blockproc(dct_cb, BLOCK_SIZE, lambda x: x / QUANTIZATION_MATRIX_CROMINANCE))
-    dct_cr_quantized = np.int32(blockproc(dct_cr, BLOCK_SIZE, lambda x: x / QUANTIZATION_MATRIX_CROMINANCE))
+    dct_y_quantized = blockproc(dct_y, Constants.BLOCK_SIZE, lambda x: x / Constants.QUANTIZATION_MATRIX_LUMINANCE, np.int32)
+    dct_cb_quantized = blockproc(dct_cb, Constants.BLOCK_SIZE, lambda x: x / Constants.QUANTIZATION_MATRIX_CROMINANCE, np.int32)
+    dct_cr_quantized = blockproc(dct_cr, Constants.BLOCK_SIZE, lambda x: x / Constants.QUANTIZATION_MATRIX_CROMINANCE, np.int32)
     # zigzag view
-    y_zigzags = zigzag_block(dct_y_quantized, BLOCK_SIZE)
-    cb_zigzags = zigzag_block(dct_cb_quantized, BLOCK_SIZE)
-    cr_zigzags = zigzag_block(dct_cr_quantized, BLOCK_SIZE)
+    y_zigzags = zigzag_block(dct_y_quantized, Constants.BLOCK_SIZE, np.int32)
+    cb_zigzags = zigzag_block(dct_cb_quantized, Constants.BLOCK_SIZE, np.int32)
+    cr_zigzags = zigzag_block(dct_cr_quantized, Constants.BLOCK_SIZE, np.int32)
     # subtracting prev dc to next dc
     old = y_zigzags[0,0]
     for i in range(1, y_zigzags.shape[0]):
@@ -141,13 +142,16 @@ def image2jpeg(image_name: str, rgb_image: np.ndarray) -> None:
         old_cb = temp_cb
         old_cr = temp_cr
     # run length encoding each block
-    y_rle = rle_matrix_rows(y_zigzags)
-    cb_rle = rle_matrix_rows(cb_zigzags)
-    cr_rle = rle_matrix_rows(cr_zigzags)
-    np.savez_compressed(image_name+".npz", y_rle=y_rle, cb_rle=cb_rle, cr_rle=cr_rle, shape=y.shape)
+    y_rle = rle_matrix_rows(y_zigzags, np.int8)
+    cb_rle = rle_matrix_rows(cb_zigzags, np.int8)
+    cr_rle = rle_matrix_rows(cr_zigzags, np.int8)
+    return y_rle, cb_rle, cr_rle, y.shape
 
-def invert_run_length_encoding(rle: np.ndarray, width: int) -> np.ndarray:
-    reconstructed = np.zeros(width)
+def save_jpeg(image_name, y_rle, cb_rle, cr_rle, shape):
+    np.savez_compressed(image_name+".npz", y_rle=y_rle, cb_rle=cb_rle, cr_rle=cr_rle, shape=shape)
+
+def invert_run_length_encoding(rle: np.ndarray, width: int, dtype) -> np.ndarray:
+    reconstructed = np.zeros(width, dtype=dtype)
     index = 0
     for i in range(0, len(rle), 2):
         value = rle[i]
@@ -157,17 +161,17 @@ def invert_run_length_encoding(rle: np.ndarray, width: int) -> np.ndarray:
             index += 1
     return reconstructed
 
-def invert_rle_matrix_rows(rle_rows: np.ndarray, width: int) -> np.ndarray:
-    matrix = np.zeros((rle_rows.shape[0], width))
+def invert_rle_matrix_rows(rle_rows: np.ndarray, width: int, dtype) -> np.ndarray:
+    matrix = np.zeros((rle_rows.shape[0], width), dtype=dtype)
     for i in range(0, rle_rows.shape[0]):
-        matrix[i] = invert_run_length_encoding(rle_rows[i], width)
+        matrix[i] = invert_run_length_encoding(rle_rows[i], width, dtype)
     return matrix
 
-def invert_zigzag_traversal(zigzag_array: np.ndarray) -> np.ndarray:
+def invert_zigzag_traversal(zigzag_array: np.ndarray, dtype) -> np.ndarray:
     size = int(np.sqrt(zigzag_array.shape[0]))
     if (size*size != zigzag_array.shape[0]):
         raise ValueError("error shapes do not match")
-    matrix = np.zeros((size, size), dtype=zigzag_array.dtype)
+    matrix = np.zeros((size, size), dtype=dtype)
     index = 0
     for d in range(2*size - 1):
         if d < size:
@@ -192,39 +196,43 @@ def invert_zigzag_traversal(zigzag_array: np.ndarray) -> np.ndarray:
                 index += 1
     return matrix
 
-def invert_zigzag_block(zigzag_matrix: np.ndarray, matrix_shape: tuple, dtype=np.int32):
+def invert_zigzag_block(zigzag_matrix: np.ndarray, matrix_shape: tuple, dtype):
     matrix = np.zeros(matrix_shape, dtype=dtype)
-    w = matrix_shape[1] / BLOCK_SIZE
+    w = matrix_shape[1] / Constants.BLOCK_SIZE
     i = 0
     j = 0
     for index in range(0, zigzag_matrix.shape[0]):
-        matrix[i*BLOCK_SIZE:i*BLOCK_SIZE+BLOCK_SIZE, j*BLOCK_SIZE:j*BLOCK_SIZE+BLOCK_SIZE] = invert_zigzag_traversal(zigzag_matrix[index])
+        matrix[i*Constants.BLOCK_SIZE:i*Constants.BLOCK_SIZE+Constants.BLOCK_SIZE,
+               j*Constants.BLOCK_SIZE:j*Constants.BLOCK_SIZE+Constants.BLOCK_SIZE] = invert_zigzag_traversal(zigzag_matrix[index], dtype=dtype)
         j += 1
         if (j==w):
             i += 1
             j = 0
     return matrix
 
-def upsample_matrix(matrix: np.ndarray, upsample_factor: int):
+def upsample_matrix(matrix: np.ndarray, upsample_factor: int, dtype):
     size = int(matrix.shape[0]*upsample_factor), int(matrix.shape[1]*upsample_factor)
-    output = np.ones(size)
+    output = np.ones(size, dtype=dtype)
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             v = matrix[i,j]
-            output[i*DOWNSAMPLE_FACTOR:i*DOWNSAMPLE_FACTOR+DOWNSAMPLE_FACTOR,
-                   j*DOWNSAMPLE_FACTOR:j*DOWNSAMPLE_FACTOR+DOWNSAMPLE_FACTOR] *= v
+            output[i*Constants.DOWNSAMPLE_FACTOR:i*Constants.DOWNSAMPLE_FACTOR+Constants.DOWNSAMPLE_FACTOR,
+                   j*Constants.DOWNSAMPLE_FACTOR:j*Constants.DOWNSAMPLE_FACTOR+Constants.DOWNSAMPLE_FACTOR] *= v
     return output
 
-def jpeg2image(image_name):
+def load_jpeg(image_name: str):
     data = np.load(image_name + '.npz', allow_pickle=True)
     y_rle = data["y_rle"]
     cb_rle = data["cb_rle"]
     cr_rle = data["cr_rle"]
-    image_shape = int(data["shape"][0]), int(data["shape"][1])
+    shape = int(data["shape"][0]), int(data["shape"][1])
+    return y_rle, cb_rle, cr_rle, shape
+
+def jpeg2image(y_rle, cb_rle, cr_rle, shape):
     # inverting rle
-    y_zigzags = invert_rle_matrix_rows(y_rle, BLOCK_SIZE*BLOCK_SIZE)
-    cb_zigzags = invert_rle_matrix_rows(cb_rle, BLOCK_SIZE*BLOCK_SIZE)
-    cr_zigzags = invert_rle_matrix_rows(cr_rle, BLOCK_SIZE*BLOCK_SIZE)
+    y_zigzags = invert_rle_matrix_rows(y_rle, Constants.BLOCK_SIZE*Constants.BLOCK_SIZE, np.float32)
+    cb_zigzags = invert_rle_matrix_rows(cb_rle, Constants.BLOCK_SIZE*Constants.BLOCK_SIZE, np.float32)
+    cr_zigzags = invert_rle_matrix_rows(cr_rle, Constants.BLOCK_SIZE*Constants.BLOCK_SIZE, np.float32)
     # adding prev dc to next dc
     for i in range(1, y_zigzags.shape[0]):
         y_zigzags[i,0] = y_zigzags[i,0] + y_zigzags[i-1,0]
@@ -232,23 +240,22 @@ def jpeg2image(image_name):
         cb_zigzags[i,0] = cb_zigzags[i,0] + cb_zigzags[i-1,0]
         cr_zigzags[i,0] = cr_zigzags[i,0] + cr_zigzags[i-1,0]
     # inverting zigzag view
-    color_shape = int(image_shape[0]/DOWNSAMPLE_FACTOR), int(image_shape[1]/DOWNSAMPLE_FACTOR)
-    dct_y_quantized = invert_zigzag_block(y_zigzags, image_shape)
-    dct_cb_quantized = invert_zigzag_block(cb_zigzags, color_shape)
-    dct_cr_quantized = invert_zigzag_block(cr_zigzags, color_shape)
+    color_shape = int(shape[0]/Constants.DOWNSAMPLE_FACTOR), int(shape[1]/Constants.DOWNSAMPLE_FACTOR)
+    dct_y_quantized = invert_zigzag_block(y_zigzags, shape, np.float32)
+    dct_cb_quantized = invert_zigzag_block(cb_zigzags, color_shape, np.float32)
+    dct_cr_quantized = invert_zigzag_block(cr_zigzags, color_shape, np.float32)
     # inverting quantization
-    dct_y = blockproc(dct_y_quantized, BLOCK_SIZE, lambda x: x*QUANTIZATION_MATRIX_LUMINANCE)
-    dct_cb = blockproc(dct_cb_quantized, BLOCK_SIZE, lambda x: x*QUANTIZATION_MATRIX_CROMINANCE)
-    dct_cr = blockproc(dct_cr_quantized, BLOCK_SIZE, lambda x: x*QUANTIZATION_MATRIX_CROMINANCE)
+    dct_y = blockproc(dct_y_quantized, Constants.BLOCK_SIZE, lambda x: x*Constants.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
+    dct_cb = blockproc(dct_cb_quantized, Constants.BLOCK_SIZE, lambda x: x*Constants.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
+    dct_cr = blockproc(dct_cr_quantized, Constants.BLOCK_SIZE, lambda x: x*Constants.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
     # shifting
-    y = np.uint8(blockproc(dct_y, BLOCK_SIZE, cv2.idct) + SHIFT)
-    cb_downsampled = blockproc(dct_cb, BLOCK_SIZE, cv2.idct) + SHIFT
-    cr_downsampled = blockproc(dct_cr, BLOCK_SIZE, cv2.idct) + SHIFT
+    y = np.uint8(blockproc(dct_y, Constants.BLOCK_SIZE, cv2.idct, np.int32) + Constants.SHIFT)
+    cb_downsampled = blockproc(dct_cb, Constants.BLOCK_SIZE, cv2.idct, np.int32) + Constants.SHIFT
+    cr_downsampled = blockproc(dct_cr, Constants.BLOCK_SIZE, cv2.idct, np.int32) + Constants.SHIFT
     # upsampling color
-    cb = np.uint8(upsample_matrix(cb_downsampled, DOWNSAMPLE_FACTOR))
-    cr = np.uint8(upsample_matrix(cr_downsampled, DOWNSAMPLE_FACTOR))
+    cb = upsample_matrix(cb_downsampled, Constants.DOWNSAMPLE_FACTOR, np.uint8)
+    cr = upsample_matrix(cr_downsampled, Constants.DOWNSAMPLE_FACTOR, np.uint8)
     # rgb output
     ycbcr = np.stack((y, cb, cr), axis=-1)
     rgb_image = cv2.cvtColor(ycbcr, cv2.COLOR_YCrCb2RGB)
-    r, g, b = cv2.split(np.uint8(rgb_image))
-    return r, g, b
+    return rgb_image
