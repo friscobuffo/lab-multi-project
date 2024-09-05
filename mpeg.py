@@ -36,8 +36,8 @@ class VideoCompresser:
             for j in range(0,dim[1]-15, 16):
                 window = self.prev_frame[i:i+16, j:j+16]
                 x,y = compute_motion(frame, i, j, window, 4)
-                motions[px,py,0] = x
-                motions[px,py,1] = y
+                motions[py,px,0] = x
+                motions[py,px,1] = y
                 px += 1
             py += 1
         self.prev_frame = frame
