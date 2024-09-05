@@ -10,10 +10,10 @@ def compute_motion(image: np.ndarray, window_x, window_y, window: np.ndarray, ma
     best_value = matrices_distance(image[window_x:window_x+window_size[0],
                                          window_y:window_y+window_size[1]], window)
     for i in range(window_x-max_slide, window_x+max_slide+1):
-        if i<0 or i+window_size[0]>=dim[0]:
+        if i < 0 or i+window_size[0] >= dim[0]:
             continue
         for j in range(window_y-max_slide, window_y+max_slide+1):
-            if j<0 or j+window_size[1]>=dim[1]:
+            if j < 0 or j+window_size[1] >= dim[1]:
                 continue
             curr_value = matrices_distance(image[i:i+window_size[0], j:j+window_size[1]], window)
             if curr_value<best_value:
