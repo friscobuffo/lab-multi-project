@@ -23,10 +23,8 @@ class Jpeg:
                                                 [99,99,99,99,99,99,99,99],
                                                 [99,99,99,99,99,99,99,99]])
 
-    def __init__(self, Image) -> None:
-        rgb_image = np.stack((Image.R, Image.G, Image.B), axis=-1)
-        ycbcr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
-        y, cb, cr = cv2.split(ycbcr_image)
+    def __init__(self, image: Image) -> None:
+        y, cb, cr = image.get_color_space("YCbCr")
         y = np.float32(y)
         # downsampling color
         cb = Jpeg._downsample_matrix(cb, np.float32)
@@ -68,9 +66,9 @@ class Jpeg:
         dct_cb_quantized = Jpeg._apply_izigzag(cb_zigzags, color_shape, np.float32)
         dct_cr_quantized = Jpeg._apply_izigzag(cr_zigzags, color_shape, np.float32)
         # inverting quantization
-        dct_y = Jpeg._apply_dequantization(dct_y_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
-        dct_cb = Jpeg._apply_dequantization(dct_cb_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
-        dct_cr = Jpeg._apply_dequantization(dct_cr_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
+        dct_y = Jpeg._apply_dequantization(dct_y_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
+        dct_cb = Jpeg._apply_dequantization(dct_cb_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
+        dct_cr = Jpeg._apply_dequantization(dct_cr_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
         # inverting dct and shifting
         y = np.uint8(Jpeg._apply_idct(dct_y, np.int32) + Jpeg.SHIFT)
         cb_downsampled = Jpeg._apply_idct(dct_cb, np.int32) + Jpeg.SHIFT
@@ -80,8 +78,7 @@ class Jpeg:
         cr = Jpeg._upsample_matrix(cr_downsampled, np.uint8)
         # rgb output
         ycbcr = np.stack((y, cb, cr), axis=-1)
-        rgb_image = cv2.cvtColor(ycbcr, cv2.COLOR_YCrCb2RGB)
-        return Image(rgb_image)
+        return Image(ycbcr, "YCbCr")
 
     @staticmethod
     def _downsample_matrix(matrix: np.ndarray, dtype):
@@ -254,7 +251,7 @@ class Jpeg:
         
         rle_rows = []
         for i in range(matrix.shape[0]):
-            rle_rows.append(run_length_encoding(matrix[i], dtype))
+            rle_rows.append(run_length_encoding(matrix[i]))
         return np.array(rle_rows, dtype=object)
 
     @staticmethod
@@ -273,7 +270,7 @@ class Jpeg:
 
         matrix = np.zeros((rle_rows.shape[0], width), dtype=dtype)
         for i in range(0, rle_rows.shape[0]):
-            matrix[i] = invert_run_length_encoding(rle_rows[i], width, dtype)
+            matrix[i] = invert_run_length_encoding(rle_rows[i])
         return matrix
 
     def apply_vlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
