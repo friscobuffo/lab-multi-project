@@ -281,9 +281,3 @@ class Jpeg:
 
     def apply_ivlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
         pass
-
-    def get_dpcm():
-        pass
-
-    def get_rlc():
-        pass
