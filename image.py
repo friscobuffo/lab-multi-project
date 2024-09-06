@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 class Image:
     COLOR_CONVERSIONS = {
@@ -28,3 +29,8 @@ class Image:
 
         return image[:, :, 0], image[:, :, 1], image[:, :, 2]
     
+    def print(self):
+        rgb = np.stack(self.get_color_space("RGB"), axis=-1)
+        plt.imshow(rgb)
+        plt.axis('off')
+        plt.show()

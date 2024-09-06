@@ -23,9 +23,8 @@ class Jpeg:
                                                 [99,99,99,99,99,99,99,99],
                                                 [99,99,99,99,99,99,99,99]])
 
-    def __init__(self, Image) -> None:
-        rgb_image = np.stack((Image.R, Image.G, Image.B), axis=-1)
-        ycbcr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
+    def __init__(self, image: Image) -> None:
+        ycbcr_image = np.stack((image.get_color_space("YCbCr")), axis=-1)
         y, cb, cr = cv2.split(ycbcr_image)
         y = np.float32(y)
         # downsampling color
@@ -80,8 +79,7 @@ class Jpeg:
         cr = Jpeg._upsample_matrix(cr_downsampled, np.uint8)
         # rgb output
         ycbcr = np.stack((y, cb, cr), axis=-1)
-        rgb_image = cv2.cvtColor(ycbcr, cv2.COLOR_YCrCb2RGB)
-        return Image(rgb_image)
+        return Image(ycbcr, "YCbCr")
 
     @staticmethod
     def _downsample_matrix(matrix: np.ndarray, dtype):
@@ -254,7 +252,7 @@ class Jpeg:
         
         rle_rows = []
         for i in range(matrix.shape[0]):
-            rle_rows.append(run_length_encoding(matrix[i], dtype))
+            rle_rows.append(run_length_encoding(matrix[i]))
         return np.array(rle_rows, dtype=object)
 
     @staticmethod
@@ -273,7 +271,7 @@ class Jpeg:
 
         matrix = np.zeros((rle_rows.shape[0], width), dtype=dtype)
         for i in range(0, rle_rows.shape[0]):
-            matrix[i] = invert_run_length_encoding(rle_rows[i], width, dtype)
+            matrix[i] = invert_run_length_encoding(rle_rows[i])
         return matrix
 
     def apply_vlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
