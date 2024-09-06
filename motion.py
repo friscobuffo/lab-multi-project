@@ -3,11 +3,14 @@ from image import Image
 
 class MotionVectors:
 
-    def __init__(self, prev_frame: Image, next_frame: Image) -> None:
-        self.vectors = None
+    def __init__(self, prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> None:
+        self.block_size = block_size
+        self.window_size = window_size
+        self.vectors = self._compute_motion_estimation(prev_frame, next_frame)
 
-    def compute_motion_estimation():
-        pass
+    @staticmethod
+    def _compute_motion_estimation(prev_frame: Image, next_frame: Image):
+        prev_Y, next_Y = prev_frame.get_color_space("YCbCr")[0], next_frame.get_color_space("YCbCr")[0]
 
     def compute_motion_compensation():
         pass
