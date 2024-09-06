@@ -2,62 +2,88 @@ import numpy as np
 
 from image import Image
 
-class MotionVectors:
+class MotionVector:
+    def __init__(self, start: tuple[int, int], end: tuple[int, int]) -> None:
+        self.start = np.array(start)
+        self.end = np.array(end)
+        self.vector = self.end - self.start
 
-    def __init__(self, prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> None:
-        height, width = prev_frame.get_color_space("YCbCr")[0].shape
-        if width % block_size != 0 or height % block_size != 0:
-            raise ValueError("Image size must be a multiple of block size.")
-
-        self.block_size = block_size
-        self.window_size = window_size
-        self.motion_vectors = None
-        self._compute_motion_estimation(prev_frame, next_frame)
-
-    def _compute_motion_estimation(self, prev_frame: Image, next_frame: Image):
-        prev_Y, next_Y = prev_frame.get_color_space("YCbCr")[0], next_frame.get_color_space("YCbCr")[0]
-
-        height, width = prev_Y.shape
-        motion_vectors = []
-
-        for i in range(0, height, self.block_size):
-            for j in range(0, width, self.block_size):
-                current_block = next_Y[i:i+self.block_size, j:j+self.block_size]
-
-                x_start = max(0, i - self.window_size)
-                y_start = max(0, j - self.window_size)
-                x_end = min(height - self.block_size, i + self.window_size)
-                y_end = min(width - self.block_size, j + self.window_size)
-
-                min_sad = float('inf')
-                best_match = (0, 0)
-                for x in range(x_start, x_end - self.block_size + 1):
-                    for y in range(y_start, y_end - self.block_size + 1):
-                        candidate_block = prev_Y[x:x + self.block_size, y:y + self.block_size]
-
-                        sad = np.sum(np.abs(current_block - candidate_block))
-
-                        if sad < min_sad:
-                            min_sad = sad
-                            best_match = (x - i, y - j)
-
-                motion_vectors.append(((i, j), best_match))
+    def __add__(self, other):
+        if not isinstance(other, MotionVector):
+            return NotImplemented
         
-        self.motion_vectors = motion_vectors
+        new_start = self.start + other.vector
+        new_end = self.end + other.vector
+        return MotionVector(tuple(new_start), tuple(new_end))
+
+    def __sub__(self, other):
+        if not isinstance(other, MotionVector):
+            return NotImplemented
+        
+        new_start = self.start - other.vector
+        new_end = self.end - other.vector
+        return MotionVector(tuple(new_start), tuple(new_end))
+    
+    def __mul__(self, scalar):
+        if not isinstance(scalar, (int, float)):
+            return NotImplemented
+        
+        new_start = self.start * scalar
+        new_end = self.end * scalar
+        return MotionVector(tuple(new_start), tuple(new_end))
+
+    def __truediv__(self, scalar):
+        if not isinstance(scalar, (int, float)) or scalar == 0:
+            return NotImplemented
+        
+        new_start = self.start / scalar
+        new_end = self.end / scalar
+        return MotionVector(tuple(new_start), tuple(new_end))
 
 
-    def compute_motion_compensation(self, prev_frame: Image) -> np.ndarray:
-        prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_space("YCbCr")
-        compensated_Y = np.zeros_like(prev_Y)
+def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int):
+    prev_Y, next_Y = prev_frame.get_color_space("YCbCr")[0], next_frame.get_color_space("YCbCr")[0]
 
-        for (block_pos, motion_vector) in self.motion_vectors:
-            x, y = block_pos
-            mv_x, mv_y = motion_vector
+    height, width = prev_Y.shape
+    motion_vectors = []
 
-            ref_x = x + mv_x
-            ref_y = y + mv_y
+    for i in range(0, height, block_size):
+        for j in range(0, width, block_size):
+            current_block = next_Y[i:i+block_size, j:j+block_size]
 
-            compensated_Y[x:x+self.block_size, y:y+self.block_size] = prev_Y[ref_x:ref_x+self.block_size, ref_y:ref_y+self.block_size]
+            x_start = max(0, i - window_size)
+            y_start = max(0, j - window_size)
+            x_end = min(height - block_size, i + window_size)
+            y_end = min(width - block_size, j + window_size)
 
-        image_YCbCr = np.stack((compensated_Y, prev_Cb, prev_Cr), axis=-1)
-        return Image(image_YCbCr, "YCbCr")
+            min_sad = float('inf')
+            best_match = (0, 0)
+            for x in range(x_start, x_end - block_size + 1):
+                for y in range(y_start, y_end - block_size + 1):
+                    candidate_block = prev_Y[x:x + block_size, y:y + block_size]
+
+                    sad = np.sum(np.abs(current_block - candidate_block))
+
+                    if sad < min_sad:
+                        min_sad = sad
+                        best_match = (x, y)
+
+            motion_vectors.append(MotionVector((i, j), best_match))
+    
+    return motion_vectors
+
+def compute_motion_compensation(prev_frame: Image, mvs: list[MotionVector], block_size: int) -> Image:
+    prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_space("YCbCr")
+    compensated_Y = np.zeros_like(prev_Y)
+
+    for mv in mvs:
+        prev_x, prev_y = mv.start
+        mv_x, mv_y = mv.vector
+
+        ref_x = prev_x + mv_x
+        ref_y = prev_y + mv_y
+
+        compensated_Y[prev_x:prev_x+block_size, prev_y:prev_y+block_size] = prev_Y[ref_x:ref_x+block_size, ref_y:ref_y+block_size]
+
+    image_YCbCr = np.stack((compensated_Y, prev_Cb, prev_Cr), axis=-1)
+    return Image(image_YCbCr, "YCbCr")
