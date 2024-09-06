@@ -5,20 +5,36 @@ from jpeg_ import Jpeg
 from motion import MotionVectors
 
 class Encoder:
-    def __init__(self) -> None:
+    def __init__(self, block_size: int = 8, window_size: int = 32) -> None:
         self.last_intra_frame = None
         self.last_predicted_frame = None
-        pass
+        self.block_size = block_size
+        self.window_size = window_size
     
     def encode_intra_frame(self, frame: Image) -> Jpeg:
         encoded_frame = Jpeg(frame)
         self.last_intra_frame = encoded_frame.decode()
         return encoded_frame
 
-    def encode_predicted_frame(frame: Image) -> tuple[Jpeg, MotionVectors]:
-        pass
+    def encode_predicted_frame(self, frame: Image) -> tuple[Jpeg, MotionVectors]:
+        mv = MotionVectors(self.last_intra_frame, frame, self.block_size, self.window_size)
+        mc = mv.compute_motion_compensation(self.last_intra_frame)
+        encoded_mc = Jpeg(mc)
 
-    def encode_bidirectional_frame(frame: Image) -> tuple[Jpeg, MotionVectors]:
+        self.last_predicted_frame = encoded_mc.decode()
+        return encoded_mc, mv
+
+    def encode_bidirectional_frame(self, frame: Image) -> tuple[Jpeg, MotionVectors]:
+        intra_mv = MotionVectors(self.last_intra_frame, frame, self.block_size, self.window_size)
+        predicted_mv = MotionVectors(self.last_predicted_frame, frame, self.block_size, self.window_size)
+        
+        mc = mv.compute_motion_compensation(self.last_intra_frame)
+        encoded_mc = Jpeg(mc)
+
+        self.last_predicted_frame = encoded_mc.decode()
+        return encoded_mc, mv
+        
+        
         pass
 
     # questa va tolta
