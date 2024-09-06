@@ -24,8 +24,7 @@ class Jpeg:
                                                 [99,99,99,99,99,99,99,99]])
 
     def __init__(self, image: Image) -> None:
-        ycbcr_image = np.stack((image.get_color_space("YCbCr")), axis=-1)
-        y, cb, cr = cv2.split(ycbcr_image)
+        y, cb, cr = image.get_color_space("YCbCr")
         y = np.float32(y)
         # downsampling color
         cb = Jpeg._downsample_matrix(cb, np.float32)
@@ -67,9 +66,9 @@ class Jpeg:
         dct_cb_quantized = Jpeg._apply_izigzag(cb_zigzags, color_shape, np.float32)
         dct_cr_quantized = Jpeg._apply_izigzag(cr_zigzags, color_shape, np.float32)
         # inverting quantization
-        dct_y = Jpeg._apply_dequantization(dct_y_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
-        dct_cb = Jpeg._apply_dequantization(dct_cb_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
-        dct_cr = Jpeg._apply_dequantization(dct_cr_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
+        dct_y = Jpeg._apply_dequantization(dct_y_quantized, Jpeg.QUANTIZATION_MATRIX_LUMINANCE, np.float32)
+        dct_cb = Jpeg._apply_dequantization(dct_cb_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
+        dct_cr = Jpeg._apply_dequantization(dct_cr_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
         # inverting dct and shifting
         y = np.uint8(Jpeg._apply_idct(dct_y, np.int32) + Jpeg.SHIFT)
         cb_downsampled = Jpeg._apply_idct(dct_cb, np.int32) + Jpeg.SHIFT
