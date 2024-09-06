@@ -1,39 +1,63 @@
-from numpy import np
+import numpy as np
+
 from image import Image
 
 class MotionVectors:
 
     def __init__(self, prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> None:
+        height, width = prev_frame.get_color_space("YCbCr")[0].shape
+        if width % block_size != 0 or height % block_size != 0:
+            raise ValueError("Image size must be a multiple of block size.")
+
         self.block_size = block_size
         self.window_size = window_size
-        self.vectors = self._compute_motion_estimation(prev_frame, next_frame)
+        self.motion_vectors = None
+        self._compute_motion_estimation(prev_frame, next_frame)
 
-    @staticmethod
-    def _compute_motion_estimation(prev_frame: Image, next_frame: Image):
+    def _compute_motion_estimation(self, prev_frame: Image, next_frame: Image):
         prev_Y, next_Y = prev_frame.get_color_space("YCbCr")[0], next_frame.get_color_space("YCbCr")[0]
 
-    def compute_motion_compensation():
-        pass
+        height, width = prev_Y.shape
+        motion_vectors = []
 
-    def matrices_distance(matrix1: np.ndarray, matrix2: np.ndarray) -> int:
-        return np.sum(np.abs(matrix1-matrix2))
+        for i in range(0, height, self.block_size):
+            for j in range(0, width, self.block_size):
+                current_block = next_Y[i:i+self.block_size, j:j+self.block_size]
 
-    def compute_motion(image: np.ndarray, window_x, window_y, window: np.ndarray, max_slide: int):
-        window_size = window.shape
-        dim = image.shape
-        best = (window_x, window_y)
-        best_value = matrices_distance(image[window_x:window_x+window_size[0],
-                                            window_y:window_y+window_size[1]], window)
-        for i in range(window_x-max_slide, window_x+max_slide+1):
-            if i < 0 or i+window_size[0] >= dim[0]:
-                continue
-            for j in range(window_y-max_slide, window_y+max_slide+1):
-                if j < 0 or j+window_size[1] >= dim[1]:
-                    continue
-                curr_value = matrices_distance(image[i:i+window_size[0], j:j+window_size[1]], window)
-                if curr_value<best_value:
-                    best_value = curr_value
-                    best = (i, j)
-        motion_x = best[0] - window_x
-        motion_y = best[1] - window_y
-        return motion_x, motion_y
+                x_start = max(0, i - self.window_size)
+                y_start = max(0, j - self.window_size)
+                x_end = min(height - self.block_size, i + self.window_size)
+                y_end = min(width - self.block_size, j + self.window_size)
+
+                min_sad = float('inf')
+                best_match = (0, 0)
+                for x in range(x_start, x_end - self.block_size + 1):
+                    for y in range(y_start, y_end - self.block_size + 1):
+                        candidate_block = prev_Y[x:x + self.block_size, y:y + self.block_size]
+
+                        sad = np.sum(np.abs(current_block - candidate_block))
+
+                        if sad < min_sad:
+                            min_sad = sad
+                            best_match = (x - i, y - j)
+
+                motion_vectors.append(((i, j), best_match))
+        
+        self.motion_vectors = motion_vectors
+
+
+    def compute_motion_compensation(self, prev_frame: Image) -> np.ndarray:
+        prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_space("YCbCr")
+        compensated_Y = np.zeros_like(prev_Y)
+
+        for (block_pos, motion_vector) in self.motion_vectors:
+            x, y = block_pos
+            mv_x, mv_y = motion_vector
+
+            ref_x = x + mv_x
+            ref_y = y + mv_y
+
+            compensated_Y[x:x+self.block_size, y:y+self.block_size] = prev_Y[ref_x:ref_x+self.block_size, ref_y:ref_y+self.block_size]
+
+        image_YCbCr = np.stack((compensated_Y, prev_Cb, prev_Cr), axis=-1)
+        return Image(image_YCbCr, "YCbCr")
