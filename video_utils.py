@@ -1,21 +1,34 @@
 import numpy as np
 
-def apply_dct():
+def apply_dct(frame: np.ndarray, block_size: int = None) -> np.ndarray:
     pass
 
-def apply_idct():
+def apply_idct(frame: np.ndarray, block_size: int = None) -> np.ndarray:
     pass
 
-def apply_quantization():
+def apply_quantization(frame: np.ndarray, quantization_matrix: np.ndarray) -> np.ndarray:
     pass
 
-def apply_dequantization():
+def apply_dequantization(frame: np.ndarray, quantization_matrix: np.ndarray) -> np.ndarray:
     pass
 
-def apply_vlc():
+def apply_vlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
     pass
 
-def apply_ivlc():
+def apply_ivlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
+    pass
+
+def get_dpcm():
+    pass
+
+def get_rlc():
+    pass
+
+
+def compute_motion_estimation():
+    pass
+
+def compute_motion_compensation():
     pass
 
 def matrices_distance(matrix1: np.ndarray, matrix2: np.ndarray) -> int:
@@ -40,9 +53,3 @@ def compute_motion(image: np.ndarray, window_x, window_y, window: np.ndarray, ma
     motion_x = best[0] - window_x
     motion_y = best[1] - window_y
     return motion_x, motion_y
-
-def compute_motion_estimation():
-    pass
-
-def compute_motion_compensation():
-    pass

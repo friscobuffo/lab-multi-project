@@ -9,5 +9,9 @@ class VideoEncoder:
         self.transmitter = Transmitter()
         self.reader = VideoReader()
 
+    def encode_video(path: str) -> None:
+        tmp_b1 = None
+        tmp_b2 = None
+
     def process_frame():
         pass

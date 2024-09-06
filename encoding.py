@@ -1,19 +1,23 @@
 import numpy as np
 import video_utils
 
+from image import Image
+from jpeg_ import Jpeg
+from motion import MotionVectors
+
 class Encoder:
     def __init__(self) -> None:
         self.last_intra_frame = None
         self.last_predicted_frame = None
         pass
     
-    def encode_intra_frame():
+    def encode_intra_frame(frame: Image) -> Jpeg:
         pass
 
-    def encode_predicted_frame():
+    def encode_predicted_frame(frame: Image) -> tuple[Jpeg, MotionVectors]:
         pass
 
-    def encode_bidirectional_frame():
+    def encode_bidirectional_frame(frame: Image) -> tuple[Jpeg, MotionVectors]:
         pass
 
     # questa va tolta
