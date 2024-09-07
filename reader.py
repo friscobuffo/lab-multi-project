@@ -4,7 +4,6 @@ from image import Image
 
 class VideoReader:
     def __init__(self, path: str) -> None:
-        
         self.path= path
         self.frames = []
         self.video = self.load_video(path)
