@@ -18,7 +18,7 @@ class Image:
         self.image = image
         self.color_space = color_space
 
-    def get_color_space(self, target_space: str):
+    def get_color_spaces(self, target_space: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.color_space == target_space:
             return self.image[:, :, 0], self.image[:, :, 1], self.image[:, :, 2]
         
@@ -28,33 +28,31 @@ class Image:
         image = cv2.cvtColor(self.image, Image.COLOR_CONVERSIONS[self.color_space][target_space])
 
         return image[:, :, 0], image[:, :, 1], image[:, :, 2]
+
+    def switch_color_space(self, target_space: str) -> None:
+        if target_space not in Image.COLOR_CONVERSIONS[self.color_space]:
+            raise ValueError(f"Cannot convert from {self.color_space} to {target_space}")
+        
+        if self.color_space != target_space:
+            self.image = cv2.cvtColor(self.image, Image.COLOR_CONVERSIONS[self.color_space][target_space])
+            self.color_space = target_space
     
-    def print(self):
-        rgb = np.stack(self.get_color_space("RGB"), axis=-1)
+    def print(self) -> None:
+        rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
         plt.imshow(rgb)
         plt.axis('off')
         plt.show()
 
     def __add__(self, other: 'Image') -> 'Image':
         if self.color_space != other.color_space:
-            other_image_converted = other.convert_color_space(self.color_space)
-        else:
-            other_image_converted = other.image
-            
-        if self.image.shape != other_image_converted.shape:
-            raise ValueError("Images must have the same dimensions to be added.")
+            raise ValueError("Images must have the same color space.")
 
-        summed_image = np.clip(self.image + other_image_converted, 0, 255).astype(np.uint8)
+        summed_image = self.image + other.image
         return Image(summed_image, color_space=self.color_space)
     
     def __sub__(self, other: 'Image') -> 'Image':
         if self.color_space != other.color_space:
-            other_image_converted = other.convert_color_space(self.color_space)
-        else:
-            other_image_converted = other.image
+            raise ValueError("Images must have the same color space.")
 
-        if self.image.shape != other_image_converted.shape:
-            raise ValueError("Images must have the same dimensions to be subtracted.")
-
-        subtracted_image = np.clip(self.image - other_image_converted, 0, 255).astype(np.uint8)
+        subtracted_image = self.image - other.image
         return Image(subtracted_image, color_space=self.color_space)

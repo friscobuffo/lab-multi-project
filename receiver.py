@@ -29,6 +29,7 @@ class Receiver:
                 if not packet:  # No more data, stop receiving
                     break
                 data += packet
+            print("received data")
             return pickle.loads(data)  # Deserialize the received data
         except (socket.error, pickle.UnpicklingError) as e:
             raise ConnectionError("Failed to receive or decode data") from e

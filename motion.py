@@ -5,7 +5,7 @@ class MotionVectors:
     def __init__(self, height: int, width: int, block_size: int) -> None:
         height = height // block_size
         width = width // block_size
-        self.motion_vectors = np.zeros((width, height, 2), dtype=int)
+        self.motion_vectors = np.zeros((height, width, 2), dtype=int)
 
     def set_vector(self, block_x: int, block_y: int, x_value: int, y_value: int) -> None:
         self.motion_vectors[block_x, block_y] = [x_value, y_value]
@@ -14,11 +14,10 @@ class MotionVectors:
         return self.motion_vectors[block_x, block_y]
 
 def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
-    prev_Y = prev_frame.get_color_space("YCbCr")[0]
-    next_Y = next_frame.get_color_space("YCbCr")[0]
+    prev_Y = prev_frame.get_color_spaces("YCbCr")[0]
+    next_Y = next_frame.get_color_spaces("YCbCr")[0]
     height, width = prev_Y.shape
     motion_vectors = MotionVectors(height, width, block_size)
-
     for i in range(0, height, block_size):
         for j in range(0, width, block_size):
             current_block = next_Y[i:i + block_size, j:j + block_size]
@@ -40,12 +39,13 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
                         min_sad = sad
                         best_match = (x - i, y - j)
 
+            # print(i, j)
             motion_vectors.set_vector(i // block_size, j // block_size, best_match[0], best_match[1])
     
     return motion_vectors
 
 def compute_motion_compensation(prev_frame: Image, motion_vectors: MotionVectors, block_size: int) -> Image:
-    prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_space("YCbCr")
+    prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_spaces("YCbCr")
     compensated_Y = np.zeros_like(prev_Y)
 
     vec_height, vec_width = motion_vectors.motion_vectors.shape[:2]

@@ -28,7 +28,7 @@ class Jpeg:
             self.encode(image)
 
     def encode(self, image: Image) -> None:
-        y, cb, cr = image.get_color_space("YCbCr")
+        y, cb, cr = image.get_color_spaces("YCbCr")
         y = np.float32(y)
         # downsampling color
         cb = Jpeg._downsample_matrix(cb, np.float32)
@@ -56,7 +56,7 @@ class Jpeg:
         self.original_shape = int(y.shape[0]), int(y.shape[1])
         return
     
-    def decode(self) -> Image:
+    def decode(self, dtype = np.uint8) -> Image:
         # inverting rle
         y_zigzags = Jpeg._apply_irle(self.y_rle, np.float32)
         cb_zigzags = Jpeg._apply_irle(self.cb_rle, np.float32)
@@ -75,12 +75,12 @@ class Jpeg:
         dct_cb = Jpeg._apply_dequantization(dct_cb_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
         dct_cr = Jpeg._apply_dequantization(dct_cr_quantized, Jpeg.QUANTIZATION_MATRIX_CROMINANCE, np.float32)
         # inverting dct and shifting
-        y = np.uint8(Jpeg._apply_idct(dct_y, np.int32) + Jpeg.SHIFT)
+        y = dtype(Jpeg._apply_idct(dct_y, np.int32) + Jpeg.SHIFT)
         cb_downsampled = Jpeg._apply_idct(dct_cb, np.int32) + Jpeg.SHIFT
         cr_downsampled = Jpeg._apply_idct(dct_cr, np.int32) + Jpeg.SHIFT
         # upsampling color
-        cb = Jpeg._upsample_matrix(cb_downsampled, np.uint8)
-        cr = Jpeg._upsample_matrix(cr_downsampled, np.uint8)
+        cb = Jpeg._upsample_matrix(cb_downsampled, dtype)
+        cr = Jpeg._upsample_matrix(cr_downsampled, dtype)
         # rgb output
         ycbcr = np.stack((y, cb, cr), axis=-1)
         return Image(ycbcr, "YCbCr")

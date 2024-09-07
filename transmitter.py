@@ -24,6 +24,7 @@ class Transmitter:
         try:
             message = pickle.dumps(obj)
             self.soket.sendall(message)
+            print("sent data")
         except (socket.error, pickle.PicklingError) as e:
             raise ConnectionError("Failed to send data") from e
 
