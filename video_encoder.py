@@ -1,4 +1,3 @@
-import numpy as np
 from encoding import Encoder
 from transmitter import Transmitter
 from reader import VideoReader

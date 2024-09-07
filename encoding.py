@@ -1,5 +1,5 @@
 from image import Image
-from jpeg_ import Jpeg
+from jpeg import Jpeg
 from motion import MotionVector, compute_motion_compensation, compute_motion_estimation
 
 class Encoder:
