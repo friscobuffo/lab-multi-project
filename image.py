@@ -34,3 +34,27 @@ class Image:
         plt.imshow(rgb)
         plt.axis('off')
         plt.show()
+
+    def __add__(self, other: 'Image') -> 'Image':
+        if self.color_space != other.color_space:
+            other_image_converted = other.convert_color_space(self.color_space)
+        else:
+            other_image_converted = other.image
+            
+        if self.image.shape != other_image_converted.shape:
+            raise ValueError("Images must have the same dimensions to be added.")
+
+        summed_image = np.clip(self.image + other_image_converted, 0, 255).astype(np.uint8)
+        return Image(summed_image, color_space=self.color_space)
+    
+    def __sub__(self, other: 'Image') -> 'Image':
+        if self.color_space != other.color_space:
+            other_image_converted = other.convert_color_space(self.color_space)
+        else:
+            other_image_converted = other.image
+
+        if self.image.shape != other_image_converted.shape:
+            raise ValueError("Images must have the same dimensions to be subtracted.")
+
+        subtracted_image = np.clip(self.image - other_image_converted, 0, 255).astype(np.uint8)
+        return Image(subtracted_image, color_space=self.color_space)

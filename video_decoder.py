@@ -2,7 +2,7 @@ import numpy as np
 from decoding import Decoder
 from receiver import Receiver
 
-class VideoEncoder:
+class VideoDecoder:
     def __init__(self) -> None:
         self.decoder = Decoder()
         self.transmitter = Receiver()
