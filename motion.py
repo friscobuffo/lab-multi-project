@@ -1,53 +1,27 @@
 import numpy as np
+
 from image import Image
 
-class MotionVector:
-    def __init__(self, start: tuple[int, int], end: tuple[int, int]) -> None:
-        self.start = np.array(start, dtype=np.int32)
-        self.end = np.array(end, dtype=np.int32)
-        self.vector = self.end - self.start
+class MotionVectors:
+    def __init__(self, frame_shape: np.ndarray, block_size: int) -> None:
+        vec_shape = frame_shape // block_size
+        self.motion_vectors = np.zeros((vec_shape[0], vec_shape[1], 2), dtype=int)
 
-    def __add__(self, other: 'MotionVector') -> 'MotionVector':
-        if not isinstance(other, MotionVector):
-            return ValueError
-        
-        new_start = self.start + other.vector
-        new_end = self.end + other.vector
-        return MotionVector(tuple(new_start), tuple(new_end))
+    def set_vector(self, block_x: int, block_y: int, x_value: int, y_value: int) -> None:
+        self.motion_vectors[block_x, block_y] = [x_value, y_value]
 
-    def __sub__(self, other: 'MotionVector') -> 'MotionVector':
-        if not isinstance(other, MotionVector):
-            return ValueError
-        
-        new_start = self.start - other.vector
-        new_end = self.end - other.vector
-        return MotionVector(tuple(new_start), tuple(new_end))
-    
-    def __mul__(self, scalar: float) -> 'MotionVector':
-        if not isinstance(scalar, (int, float)):
-            return ValueError
-        
-        new_start = self.start * scalar
-        new_end = self.end * scalar
-        return MotionVector(tuple(new_start.astype(int)), tuple(new_end.astype(int)))
+    def get_vector(self, block_x: int, block_y: int) -> np.ndarray:
+        return self.motion_vectors[block_x, block_y]
 
-    def __truediv__(self, scalar: float) -> 'MotionVector':
-        if not isinstance(scalar, (int, float)) or scalar == 0:
-            return ValueError
-        
-        new_start = self.start / scalar
-        new_end = self.end / scalar
-        return MotionVector(tuple(new_start.astype(int)), tuple(new_end.astype(int)))
-
-
-def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> list[MotionVector]:
-    prev_Y, next_Y = prev_frame.get_color_space("YCbCr")[0], next_frame.get_color_space("YCbCr")[0]
+def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
+    prev_Y = prev_frame.get_color_space("YCbCr")[0]
+    next_Y = next_frame.get_color_space("YCbCr")[0]
     height, width = prev_Y.shape
-    motion_vectors = []
+    motion_vectors = MotionVectors(prev_Y.shape, block_size)
 
     for i in range(0, height, block_size):
         for j in range(0, width, block_size):
-            current_block = next_Y[i:i+block_size, j:j+block_size]
+            current_block = next_Y[i:i + block_size, j:j + block_size]
 
             x_start = max(0, i - window_size)
             y_start = max(0, j - window_size)
@@ -55,7 +29,7 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
             y_end = min(width - block_size, j + window_size)
 
             min_sad = float('inf')
-            best_match = (i, j) 
+            best_match = (0, 0)
             
             for x in range(x_start, x_end + 1):
                 for y in range(y_start, y_end + 1):
@@ -64,25 +38,25 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
 
                     if sad < min_sad:
                         min_sad = sad
-                        best_match = (x, y)
+                        best_match = (x - i, y - j)
 
-            motion_vectors.append(MotionVector((i, j), best_match))
+            motion_vectors.set_vector(i // block_size, j // block_size, best_match[0], best_match[1])
     
     return motion_vectors
 
-
-def compute_motion_compensation(prev_frame: Image, mvs: list[MotionVector], block_size: int) -> Image:
+def compute_motion_compensation(prev_frame: Image, motion_vectors: MotionVectors, block_size: int) -> Image:
     prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_space("YCbCr")
     compensated_Y = np.zeros_like(prev_Y)
 
-    for mv in mvs:
-        prev_x, prev_y = mv.start
-        mv_x, mv_y = mv.vector
+    vec_height, vec_width = motion_vectors.motion_vectors.shape[:2]
+    
+    for i in range(vec_height):
+        for j in range(vec_width):
+            mv_x, mv_y = motion_vectors.get_vector(i, j)
+            block_x, block_y = i * block_size, j * block_size
+            ref_x, ref_y = block_x + mv_x, block_y + mv_y
 
-        ref_x = prev_x + mv_x
-        ref_y = prev_y + mv_y
-
-        compensated_Y[prev_x:prev_x+block_size, prev_y:prev_y+block_size] = prev_Y[ref_x:ref_x+block_size, ref_y:ref_y+block_size]
+            compensated_Y[block_x:block_x + block_size, block_y:block_y + block_size] = prev_Y[ref_x:ref_x + block_size, ref_y:ref_y + block_size]
 
     image_YCbCr = np.stack((compensated_Y, prev_Cb, prev_Cr), axis=-1)
     return Image(image_YCbCr, "YCbCr")
