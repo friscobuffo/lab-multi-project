@@ -3,7 +3,7 @@ from image import Image
 import cv2
 
 class Jpeg:
-    DOWNSAMPLE_FACTOR = 4
+    DOWNSAMPLE_FACTOR = 2
     BLOCK_SIZE = 8
     SHIFT = 128
     QUANTIZATION_MATRIX_LUMINANCE = np.float32([[16,11,10,16,24,40,51,61],
@@ -23,7 +23,11 @@ class Jpeg:
                                                 [99,99,99,99,99,99,99,99],
                                                 [99,99,99,99,99,99,99,99]])
 
-    def __init__(self, image: Image) -> None:
+    def __init__(self, image: Image = None) -> None:
+        if image is not None:
+            self.encode(image)
+
+    def encode(self, image: Image) -> None:
         y, cb, cr = image.get_color_space("YCbCr")
         y = np.float32(y)
         # downsampling color
@@ -50,14 +54,8 @@ class Jpeg:
         self.cb_rle = Jpeg._apply_rle(cb_zigzags, np.int8)
         self.cr_rle = Jpeg._apply_rle(cr_zigzags, np.int8)
         self.original_shape = int(y.shape[0]), int(y.shape[1])
-
-    def __init__(self, y_rle: np.ndarray, cb_rle: np.ndarray,
-                 cr_rle: np.ndarray, shape: tuple[int, int]) -> None:
-        self.y_rle = y_rle
-        self.cb_rle = cb_rle
-        self.cr_rle = cr_rle
-        self.original_shape = shape
-
+        return
+    
     def decode(self) -> Image:
         # inverting rle
         y_zigzags = Jpeg._apply_irle(self.y_rle, np.float32)
@@ -98,7 +96,11 @@ class Jpeg:
         cb_rle = data["cb_rle"]
         cr_rle = data["cr_rle"]
         shape = int(data["shape"][0]), int(data["shape"][1])
-        return Jpeg(y_rle, cb_rle, cr_rle, shape)
+        jpeg = Jpeg(None)
+        jpeg.y_rle = y_rle
+        jpeg.cb_rle = cb_rle
+        jpeg.cr_rle = cr_rle
+        jpeg.original_shape = shape
 
     @staticmethod
     def _downsample_matrix(matrix: np.ndarray, dtype):
@@ -127,6 +129,7 @@ class Jpeg:
     def _blockproc(matrix: np.ndarray, func, dtype):
         h, w = matrix.shape
         if h % Jpeg.BLOCK_SIZE != 0 or w % Jpeg.BLOCK_SIZE != 0:
+            print("h:", h, "w:", w, "block size:", Jpeg.BLOCK_SIZE)
             raise ValueError("Image size must be a multiple of block size.")
         output = np.zeros_like(matrix, dtype=dtype)
         for i in range(0, h, Jpeg.BLOCK_SIZE):
@@ -135,6 +138,25 @@ class Jpeg:
                 processed_block = func(block)
                 output[i:i+Jpeg.BLOCK_SIZE, j:j+Jpeg.BLOCK_SIZE] = processed_block
         return output
+    
+#               .-"'"-.
+#              |       |  
+#            (`-._____.-')
+#         ..  `-._____.-'  ..
+#       .', :./'.== ==.`\.: ,`.
+#      : (  :   ___ ___   :  ) ;
+#      '._.:    |0| |0|    :._.'
+#         /     `-'_`-'     \
+#       _.|       / \       |._
+#     .'.-|      (   )      |-.`.
+#    //'  |  .-"`"`-'"`"-.  |  `\\ 
+#   ||    |  `~":-...-:"~`  |    ||
+#   ||     \.    `---'    ./     ||
+#   ||       '-._     _.-'       ||
+#  /  \       _/ `~:~` \_       /  \
+# ||||\)   .-'    / \    `-.   (/||||
+# \|||    (`.___.')-(`.___.')    |||/
+#  '"'     `-----'   `-----'     '"'
 
     @staticmethod
     def _apply_dct(matrix: np.ndarray, dtype) -> np.ndarray:

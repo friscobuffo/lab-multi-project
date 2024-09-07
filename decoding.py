@@ -3,7 +3,6 @@ from jpeg import Jpeg
 from motion import MotionVectors, compute_motion_compensation
 
 class Decoder:
-
     def __init__(self, block_size: int = 8) -> None:
         self.last_key_frame = None
         self.block_size = block_size

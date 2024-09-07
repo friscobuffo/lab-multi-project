@@ -10,7 +10,8 @@ class Encoder:
     
     def encode_intra_frame(self, curr_frame: Image) -> Jpeg:
         encoded_frame = Jpeg(curr_frame)
-        self.last_key_frames.pop(0)
+        if self.last_key_frames:
+            self.last_key_frames.pop(0)
         self.last_key_frames.append(encoded_frame.decode())
         return encoded_frame
 

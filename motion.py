@@ -1,11 +1,11 @@
 import numpy as np
-
 from image import Image
 
 class MotionVectors:
-    def __init__(self, frame_shape: np.ndarray, block_size: int) -> None:
-        vec_shape = frame_shape // block_size
-        self.motion_vectors = np.zeros((vec_shape[0], vec_shape[1], 2), dtype=int)
+    def __init__(self, height: int, width: int, block_size: int) -> None:
+        height = height // block_size
+        width = width // block_size
+        self.motion_vectors = np.zeros((width, height, 2), dtype=int)
 
     def set_vector(self, block_x: int, block_y: int, x_value: int, y_value: int) -> None:
         self.motion_vectors[block_x, block_y] = [x_value, y_value]
@@ -17,7 +17,7 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
     prev_Y = prev_frame.get_color_space("YCbCr")[0]
     next_Y = next_frame.get_color_space("YCbCr")[0]
     height, width = prev_Y.shape
-    motion_vectors = MotionVectors(prev_Y.shape, block_size)
+    motion_vectors = MotionVectors(height, width, block_size)
 
     for i in range(0, height, block_size):
         for j in range(0, width, block_size):
