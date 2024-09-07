@@ -49,8 +49,15 @@ class Jpeg:
         self.y_rle = Jpeg._apply_rle(y_zigzags, np.int8)
         self.cb_rle = Jpeg._apply_rle(cb_zigzags, np.int8)
         self.cr_rle = Jpeg._apply_rle(cr_zigzags, np.int8)
-        self.original_shape = y.shape
-    
+        self.original_shape = int(y.shape[0]), int(y.shape[1])
+
+    def __init__(self, y_rle: np.ndarray, cb_rle: np.ndarray,
+                 cr_rle: np.ndarray, shape: tuple[int, int]) -> None:
+        self.y_rle = y_rle
+        self.cb_rle = cb_rle
+        self.cr_rle = cr_rle
+        self.original_shape = shape
+
     def decode(self) -> Image:
         # inverting rle
         y_zigzags = Jpeg._apply_irle(self.y_rle, np.float32)
@@ -79,6 +86,19 @@ class Jpeg:
         # rgb output
         ycbcr = np.stack((y, cb, cr), axis=-1)
         return Image(ycbcr, "YCbCr")
+    
+    def saveToFile(self, filename: str) -> None:
+        np.savez_compressed(filename+".npz", y_rle=self.y_rle, cb_rle=self.cb_rle,
+                            cr_rle=self.cr_rle, shape=self.original_shape)
+
+    @staticmethod
+    def loadFromFile(filename: str):
+        data = np.load(filename + '.npz', allow_pickle=True)
+        y_rle = data["y_rle"]
+        cb_rle = data["cb_rle"]
+        cr_rle = data["cr_rle"]
+        shape = int(data["shape"][0]), int(data["shape"][1])
+        return Jpeg(y_rle, cb_rle, cr_rle, shape)
 
     @staticmethod
     def _downsample_matrix(matrix: np.ndarray, dtype):
