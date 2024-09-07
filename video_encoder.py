@@ -21,17 +21,17 @@ class VideoEncoder:
             # Intra Frame
             if i == 0 or (i % 9 == 0):
                 intra_frame = self.encoder.encode_intra_frame(frame)
-                self.transmitter.send_frame(intra_frame)
+                self.transmitter.send(intra_frame, None)
                 
             # Predicted Frame - Bidirectional Frame
             elif i % 3 == 0:
-                predicted_frame = self.encoder.encode_predicted_frame(frame)
-                bidirectional_frame1 = self.encoder.encode_bidirectional_frame(tmp_b1)
-                bidirectional_frame2 = self.encoder.encode_bidirectional_frame(tmp_b2)
+                predicted_frame, motion_vectors_pf = self.encoder.encode_predicted_frame(frame)
+                bidirectional_frame1, motion_vectors_bd_1 = self.encoder.encode_bidirectional_frame(tmp_b1)
+                bidirectional_frame2, motion_vectors_bd_2 = self.encoder.encode_bidirectional_frame(tmp_b2)
 
-                self.transmitter.send_frame(bidirectional_frame1)
-                self.transmitter.send_frame(bidirectional_frame2)
-                self.transmitter.send_frame(predicted_frame)
+                self.transmitter.send(bidirectional_frame1, motion_vectors_bd_1)
+                self.transmitter.send(bidirectional_frame2, motion_vectors_bd_2)
+                self.transmitter.send(predicted_frame, motion_vectors_pf)
                 
                 tmp_b1 = None
                 tmp_b2 = None
