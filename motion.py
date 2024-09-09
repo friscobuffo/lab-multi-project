@@ -58,12 +58,10 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
                 for y in range(y_start, y_end + 1):
                     candidate_block = prev_Y[x:x + block_size, y:y + block_size]
                     sad = np.sum(np.abs(current_block - candidate_block))
-
                     if sad < min_sad:
                         min_sad = sad
                         best_match = (x - i, y - j)
 
-            # print(i, j)
             motion_vectors.set_vector(i // block_size, j // block_size, best_match[0], best_match[1])
     
     print("motion estimation done")
