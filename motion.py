@@ -2,22 +2,45 @@ import numpy as np
 from image import Image
 
 class MotionVectors:
-    def __init__(self, height: int, width: int, block_size: int) -> None:
-        height = height // block_size
-        width = width // block_size
-        self.motion_vectors = np.zeros((height, width, 2), dtype=int)
+    def __init__(self, height: int = None, width: int = None, vectors: np.ndarray = None) -> None:
+        if vectors is not None:
+            self.motion_vectors = vectors
+        else:
+            self.motion_vectors = np.zeros((height, width, 2), dtype=int)
 
     def set_vector(self, block_x: int, block_y: int, x_value: int, y_value: int) -> None:
         self.motion_vectors[block_x, block_y] = [x_value, y_value]
 
     def get_vector(self, block_x: int, block_y: int) -> np.ndarray:
         return self.motion_vectors[block_x, block_y]
+    
+    def __add__(self, other: 'MotionVectors') -> 'MotionVectors':
+        if self.motion_vectors.shape != other.motion_vectors.shape:
+            raise ValueError("Motion Vectors must have the same shape.")
+        summed_vectors = self.motion_vectors + other.motion_vectors
+        return MotionVectors(vectors=summed_vectors)
+    
+    def __sub__(self, other: 'MotionVectors') -> 'MotionVectors':
+        if self.motion_vectors.shape != other.motion_vectors.shape:
+            raise ValueError("Motion Vectors must have the same shape.")
+        subtracted_vectors = self.motion_vectors - other.motion_vectors
+        return MotionVectors(vectors=subtracted_vectors)
+
+    def __mul__(self, scalar: float) -> 'MotionVectors':
+        multiplied_vectors = self.motion_vectors * scalar
+        return MotionVectors(vectors=multiplied_vectors)
+
+    def __truediv__(self, scalar: float) -> 'MotionVectors':
+        if scalar == 0:
+            raise ValueError("Division by zero is not allowed.")
+        divided_vectors = self.motion_vectors / scalar
+        return MotionVectors(vectors=divided_vectors)
 
 def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
     prev_Y = prev_frame.get_color_spaces("YCbCr")[0]
     next_Y = next_frame.get_color_spaces("YCbCr")[0]
     height, width = prev_Y.shape
-    motion_vectors = MotionVectors(height, width, block_size)
+    motion_vectors = MotionVectors(height = height // block_size, width = width // block_size)
     for i in range(0, height, block_size):
         for j in range(0, width, block_size):
             current_block = next_Y[i:i + block_size, j:j + block_size]
