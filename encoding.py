@@ -10,6 +10,7 @@ class Encoder:
         self.window_size = window_size
     
     def encode_intra_frame(self, curr_frame: Image) -> Jpeg:
+        print("computing intra frame")
         encoded_frame = Jpeg(curr_frame)
         if self.last_key_frames:
             self.last_key_frames.pop(0)
@@ -17,6 +18,7 @@ class Encoder:
         return encoded_frame
 
     def encode_predicted_frame(self, curr_frame: Image) -> tuple[Jpeg, MotionVectors]:
+        print("computing predicted frame")
         last_kf = self.last_key_frames[-1]
         mvs = compute_motion_estimation(last_kf, curr_frame, self.block_size, self.window_size)
         mc = compute_motion_compensation(last_kf, mvs, self.block_size)
@@ -33,6 +35,7 @@ class Encoder:
         return encoded_err, mvs
 
     def encode_bidirectional_frame(self, curr_frame: Image) -> tuple[Jpeg, MotionVectors]:
+        print("computing bidirectionsl frame")
         last_kf1 = self.last_key_frames[0]
         last_kf2 = self.last_key_frames[1]
 
