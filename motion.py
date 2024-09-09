@@ -37,6 +37,7 @@ class MotionVectors:
         return MotionVectors(vectors=divided_vectors)
 
 def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
+    print("computing motion estimation")
     prev_Y = prev_frame.get_color_spaces("YCbCr")[0]
     next_Y = next_frame.get_color_spaces("YCbCr")[0]
     height, width = prev_Y.shape

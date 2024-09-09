@@ -2,15 +2,10 @@ import socket
 import pickle
 
 class Receiver:
-    def __init__(self, host: str = 'localhost', port: int = 12345, timeout: float = 5.0) -> None:
+    def __init__(self, host: str = 'localhost', port: int = 12345, timeout: float = 120.0) -> None:
         self.host = host
         self.port = port
         self.timeout = timeout
-        self.soket = None
-        self.connection = None
-        self.address = None
-
-    def __enter__(self) -> 'Receiver':
         self.soket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.soket.settimeout(self.timeout)
         self.soket.bind((self.host, self.port))
@@ -39,9 +34,6 @@ class Receiver:
             self.connection.close()
         if self.soket:
             self.soket.close()
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.close()
 
 # Example usage:
 # with Receiver() as receiver:

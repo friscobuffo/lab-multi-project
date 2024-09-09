@@ -5,7 +5,7 @@ from receiver import Receiver
 class VideoDecoder:
     def __init__(self) -> None:
         self.decoder = Decoder()
-        self.transmitter = Receiver()
+        self.receiver = Receiver()
 
-    def process_frame():
-        pass
+    def process_frame(self) -> None:
+        self.receiver.receive()
