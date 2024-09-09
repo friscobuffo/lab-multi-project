@@ -33,7 +33,7 @@ class MotionVectors:
     def __truediv__(self, scalar: float) -> 'MotionVectors':
         if scalar == 0:
             raise ValueError("Division by zero is not allowed.")
-        divided_vectors = self.motion_vectors / scalar
+        divided_vectors = self.motion_vectors // scalar
         return MotionVectors(vectors=divided_vectors)
 
 def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
