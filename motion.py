@@ -67,6 +67,48 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
     print("motion estimation done")
     return motion_vectors
 
+from joblib import Parallel, delayed
+
+def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
+    print("computing motion estimation")
+    prev_Y = prev_frame.get_color_spaces("YCbCr")[0]
+    next_Y = next_frame.get_color_spaces("YCbCr")[0]
+    height, width = prev_Y.shape
+    motion_vectors = MotionVectors(height = height // block_size, width = width // block_size)
+
+    def process_block(i, j):
+        current_block = next_Y[i:i + block_size, j:j + block_size]
+        x_start = max(0, i - window_size)
+        y_start = max(0, j - window_size)
+        x_end = min(height - block_size, i + window_size)
+        y_end = min(width - block_size, j + window_size)
+
+        min_sad = float('inf')
+        best_match = (0, 0)
+        
+        for x in range(x_start, x_end + 1):
+            for y in range(y_start, y_end + 1):
+                candidate_block = prev_Y[x:x + block_size, y:y + block_size]
+                sad = np.sum(np.abs(current_block - candidate_block))
+                if sad < min_sad:
+                    min_sad = sad
+                    best_match = (x - i, y - j)
+                    
+        return (i // block_size, j // block_size, best_match)
+    
+    def process_blocks(i, height, block_size):
+        return [process_block(i, j) for j in range(0, height, block_size)]
+
+    # Parallelize the outer loop using Joblib (you can tune 'n_jobs' for your system)
+    results = Parallel(n_jobs=-1)(delayed(process_blocks)(i, height, block_size) for i in range(0, height, block_size))
+
+    for result in results:
+        for block_x, block_y, best_match in result:
+            motion_vectors.set_vector(block_x, block_y, best_match[0], best_match[1])
+
+    print("motion estimation done")
+    return motion_vectors
+
 def compute_motion_compensation(prev_frame: Image, motion_vectors: MotionVectors, block_size: int) -> Image:
     prev_Y, prev_Cb, prev_Cr = prev_frame.get_color_spaces("YCbCr")
     compensated_Y = np.zeros_like(prev_Y)
