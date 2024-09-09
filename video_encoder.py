@@ -6,15 +6,15 @@ class VideoEncoder:
     def __init__(self, path: str) -> None:
         self.path = path
         self.encoder = Encoder()
-        self.transmitter = Transmitter()
         self.reader = VideoReader(path)
         self.buffer_last_10_frames = []
         self.buffer_to_send = []
 
     def encode_next_frame(self) -> bool:
         if (len(self.buffer_to_send) > 0):
-            self.transmitter.send(self.buffer_to_send.pop(0))
-            return True
+            with Transmitter() as transmitter:
+                transmitter.send(self.buffer_to_send.pop(0))
+                return True
         self.populate_buffer_to_send()
         if (len(self.buffer_to_send) == 0):
             return False

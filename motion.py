@@ -2,7 +2,7 @@ import numpy as np
 from image import Image
 
 class MotionVectors:
-    def __init__(self, height: int = None, width: int = None, vectors: np.ndarray = None) -> None:
+    def __init__(self, height: int = None, width: int = None, vectors: any = None) -> None:
         if vectors is not None:
             self.motion_vectors = vectors
         else:
