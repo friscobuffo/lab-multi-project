@@ -66,6 +66,7 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
             # print(i, j)
             motion_vectors.set_vector(i // block_size, j // block_size, best_match[0], best_match[1])
     
+    print("motion estimation done")
     return motion_vectors
 
 def compute_motion_compensation(prev_frame: Image, motion_vectors: MotionVectors, block_size: int) -> Image:

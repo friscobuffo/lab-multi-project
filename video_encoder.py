@@ -9,12 +9,12 @@ class VideoEncoder:
         self.reader = VideoReader(path)
         self.buffer_last_10_frames = []
         self.buffer_to_send = []
+        self.transmitter = Transmitter()
 
     def encode_next_frame(self) -> bool:
         if (len(self.buffer_to_send) > 0):
-            with Transmitter() as transmitter:
-                transmitter.send(self.buffer_to_send.pop(0))
-                return True
+            self.transmitter.send(self.buffer_to_send.pop(0))
+            return True
         self.populate_buffer_to_send()
         if (len(self.buffer_to_send) == 0):
             return False
@@ -65,3 +65,6 @@ class VideoEncoder:
         self.buffer_to_send.append((intra_frame_9, None))
 
         self.buffer_last_10_frames = [self.buffer_last_10_frames[9]]
+
+    def close(self) -> None:
+        self.transmitter.close()

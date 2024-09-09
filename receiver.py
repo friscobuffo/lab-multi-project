@@ -2,7 +2,7 @@ import socket
 import pickle
 
 class Receiver:
-    def __init__(self, host: str = 'localhost', port: int = 12345, timeout: float = 120.0) -> None:
+    def __init__(self, host: str = 'localhost', port: int = 12345, timeout: float = 5.0) -> None:
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -12,9 +12,9 @@ class Receiver:
         self.soket.listen(1)
         try:
             self.connection, self.address = self.soket.accept()
+            print("receiver initilized")
         except socket.timeout as e:
             raise TimeoutError("Connection timed out while waiting for a client") from e
-        return self
 
     def receive(self) -> any:
         try:

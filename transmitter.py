@@ -9,16 +9,13 @@ class Transmitter:
         self.host = host
         self.port = port
         self.timeout = timeout
-        self.soket = None
-
-    def __enter__(self) -> 'Transmitter':
         self.soket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.soket.settimeout(self.timeout)
         try:
             self.soket.connect((self.host, self.port))
+            print("transmitter connected")
         except socket.error as e:
             raise ConnectionError(f"Failed to connect to {self.host}:{self.port}") from e
-        return self
 
     def send(self, obj: any) -> None:
         try:
@@ -31,10 +28,3 @@ class Transmitter:
     def close(self) -> None:
         if self.soket:
             self.soket.close()
-
-    def __exit__(self) -> None:
-        self.close()
-
-# Example usage:
-# with Transmitter() as transmitter:
-#     transmitter.send({'key': 'value'})
