@@ -70,7 +70,6 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
 from joblib import Parallel, delayed
 
 def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: int, window_size: int) -> MotionVectors:
-    print("computing motion estimation")
     prev_Y = prev_frame.get_color_spaces("YCbCr")[0]
     next_Y = next_frame.get_color_spaces("YCbCr")[0]
     height, width = prev_Y.shape
@@ -105,8 +104,6 @@ def compute_motion_estimation(prev_frame: Image, next_frame: Image, block_size: 
     for result in results:
         for block_x, block_y, best_match in result:
             motion_vectors.set_vector(block_x, block_y, best_match[0], best_match[1])
-
-    print("motion estimation done")
     return motion_vectors
 
 def compute_motion_compensation(prev_frame: Image, motion_vectors: MotionVectors, block_size: int) -> Image:

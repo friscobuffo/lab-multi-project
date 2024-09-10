@@ -1,5 +1,5 @@
 from encoding import Encoder
-from transmitter import Transmitter
+from transmitter2 import Transmitter
 from reader import VideoReader
 
 class VideoEncoder:
@@ -18,7 +18,8 @@ class VideoEncoder:
         self.populate_buffer_to_send()
         if (len(self.buffer_to_send) == 0):
             return False
-        self.encode_next_frame()
+        self.transmitter.send(self.buffer_to_send.pop(0))
+        return True
 
     def last_frames_of_video(self):
         if (len(self.buffer_last_10_frames) == 0):

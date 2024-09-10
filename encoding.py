@@ -35,7 +35,7 @@ class Encoder:
         return encoded_err, mvs
 
     def encode_bidirectional_frame(self, curr_frame: Image) -> tuple[Jpeg, MotionVectors]:
-        print("computing bidirectionsl frame")
+        print("computing bidirectional frame")
         last_kf1 = self.last_key_frames[0]
         last_kf2 = self.last_key_frames[1]
 
