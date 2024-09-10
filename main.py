@@ -23,9 +23,7 @@ if __name__ == "__main__":
         decoder_process.start()
 
         decoder_process.join()
-        print("finished decoder")
         encoder_process.join()
-        print("finished encoder")
         
     except KeyboardInterrupt as e:
         print("Exiting...")

@@ -67,7 +67,7 @@ class Receiver:
             self.receive_data()
         except Exception as e:
             print(f"Error during connection setup: {e}")
-            self.close_connection()
+            self.close()
 
     def receive_data(self):
         data = b""
@@ -102,9 +102,9 @@ class Receiver:
         except Exception as e:
             print(f"Error while receiving data: {e}")
         finally:
-            self.close_connection()
+            self.close()
 
-    def close_connection(self):
+    def close(self):
         print("Closing receiver connection...")
         try:
             if self.conn:
@@ -113,4 +113,7 @@ class Receiver:
                 self.server_socket.close()
         except Exception as e:
             print(f"Error while closing connection: {e}")
+
+    def __del__(self):
+        self.close()
         

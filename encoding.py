@@ -23,8 +23,9 @@ class Encoder:
         mvs = compute_motion_estimation(last_kf, curr_frame, self.block_size, self.window_size)
         mc = compute_motion_compensation(last_kf, mvs, self.block_size)
         mc.switch_color_space("RGB")
-
+        curr_frame.switch_color_space("RGB")
         err = curr_frame - mc
+        #err.print()
         
         encoded_err = Jpeg(err)
         if len(self.last_key_frames) >= 2:
@@ -45,6 +46,7 @@ class Encoder:
         avg_mvs = (kf1_mvs + kf2_mvs) / 2
         mc = compute_motion_compensation(last_kf1, avg_mvs, self.block_size)
         mc.switch_color_space("RGB")
+        curr_frame.switch_color_space("RGB")
         err = curr_frame - mc
         
         encoded_err = Jpeg(err)

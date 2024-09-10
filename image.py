@@ -30,6 +30,9 @@ class Image:
         return image[:, :, 0], image[:, :, 1], image[:, :, 2]
 
     def switch_color_space(self, target_space: str) -> None:
+        if self.color_space == target_space:
+            return
+
         if target_space not in Image.COLOR_CONVERSIONS[self.color_space]:
             raise ValueError(f"Cannot convert from {self.color_space} to {target_space}")
         
@@ -39,26 +42,17 @@ class Image:
     
     def print(self) -> None:
         rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
-        # ax.clear()  # Clear the previous image (if any)
-        # ax.imshow(rgb)  # Plot the new image
-        # ax.axis('off')  # Turn off axes
-        # plt.draw()  # Update the plot
-        # plt.pause(0.1)  # Short pause to ensure the image is rendered
 
-        # Define the key press event handler
         def on_key(event):
             print(f"Key pressed: {event.key}")
-            plt.close()  # Close the figure window when a key is pressed
+            plt.close()
 
-        # Display the image
         fig, ax = plt.subplots()
         ax.imshow(rgb)
-        ax.axis('off')  # Hide axis
+        ax.axis('off')
 
-        # Connect the key press event to the callback function
         fig.canvas.mpl_connect('key_press_event', on_key)
 
-        # Show the image and wait for the key event
         plt.show()
 
 

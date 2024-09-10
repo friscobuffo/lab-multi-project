@@ -17,6 +17,7 @@ class Decoder:
         print("Decoding predicted frame...")
         err = err_frame.decode()
         mc = compute_motion_compensation(self.last_key_frame, mvs, self.block_size)
+        mc.switch_color_space("RGB")
         decoded_frame = err + mc
         self.last_key_frame = decoded_frame
         return decoded_frame
@@ -25,5 +26,6 @@ class Decoder:
         print("Decoding bidirectional frame...")
         err = err_frame.decode()
         mc = compute_motion_compensation(self.last_key_frame, mvs, self.block_size)
+        mc.switch_color_space("RGB")
         decoded_frame = err + mc
         return decoded_frame
