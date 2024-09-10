@@ -3,70 +3,68 @@ from transmitter import Transmitter
 from reader import VideoReader
 
 class VideoEncoder:
+    FRAME_ORDER = ["I", "B", "B", "P", "B", "B", "P", "B", "B"]
+
     def __init__(self, path: str) -> None:
         self.path = path
         self.encoder = Encoder()
         self.reader = VideoReader(path)
-        self.buffer_last_10_frames = []
-        self.buffer_to_send = []
         self.transmitter = Transmitter()
+        self.frame_counter = 0
+        self.frame_buffer = []
+        self.clear_buffer = False
+        self.send_buffer = []
 
-    def send_next_frame(self) -> bool:
-        if (len(self.buffer_to_send) > 0):
-            self.transmitter.send(self.buffer_to_send.pop(0))
-            return True
-        self.populate_buffer_to_send()
-        if (len(self.buffer_to_send) == 0):
-            return False
-        self.transmitter.send(self.buffer_to_send.pop(0))
+    def encode_next_frame(self) -> any:
+        if self.frame_counter == 0:
+            self.frame_counter += 1
+            return self.encoder.encode_intra_frame(self.reader.next_frame()), None, "I"
+
+        if self.clear_buffer:
+            curr_frame = self.frame_buffer.pop(0)
+            if not self.frame_buffer:
+                self.clear_buffer = False
+            err, mvs = self.encoder.encode_bidirectional_frame(curr_frame)
+            return err, mvs, "B"
+        
+        index = self.frame_counter % len(VideoEncoder.FRAME_ORDER)
+        frame_type = VideoEncoder.FRAME_ORDER[index]
+        curr_frame = self.reader.next_frame()
+        if curr_frame is None: 
+            if self.frame_buffer:
+                return self.encoder.encode_intra_frame(self.frame_buffer.pop(0)), None, "I"
+            else:
+                return None
+
+        self.frame_counter += 1
+        if frame_type == "I":
+            self.clear_buffer = True
+            return self.encoder.encode_intra_frame(curr_frame), None, "I"
+        if frame_type == "P":
+            self.clear_buffer = True
+            err, mvs = self.encoder.encode_predicted_frame(curr_frame)
+            return err, mvs, "P"
+        if frame_type == "B":
+            self.frame_buffer.append(curr_frame)
+            return self.encode_next_frame()
+        
+    def send_next_frame(self) -> None:
+        data = self.encode_next_frame()
+        if data == None: return False
+
+        if data[2] != "B":
+            if self.send_buffer:
+                print("Sending key frame...")
+                self.send_buffer.append(data)
+                self.transmitter.send(self.send_buffer.pop(0))
+            else:
+                self.send_buffer.append(data)
+                return self.send_next_frame()
+        else:
+            print("Sending bidirectional frame...")
+            self.transmitter.send(data)
         return True
 
-    def last_frames_of_video(self):
-        if (len(self.buffer_last_10_frames) == 0):
-            return
-        self.buffer_last_10_frames.pop(0)
-        while (len(self.buffer_last_10_frames)):
-            frame = self.buffer_last_10_frames.pop(0)
-            intra_frame = self.encoder.encode_intra_frame(frame)
-            self.buffer_to_send.append((intra_frame, None, "I"))
-
-    def populate_buffer_to_send(self) -> None:
-        send_first_intra = (len(self.buffer_last_10_frames) == 0)
-        while (len(self.buffer_last_10_frames) < 10):
-            frame = self.reader.next_frame()
-            if (frame is None):
-                return self.last_frames_of_video()
-            self.buffer_last_10_frames.append(frame)
-        # Intra Frame 1
-        if (send_first_intra):
-            intra_frame_0 = self.encoder.encode_intra_frame(self.buffer_last_10_frames[0])
-            self.buffer_to_send.append((intra_frame_0, None, "I"))
-        # Predicted Frame - Bidirectional Frame (block 1)
-        error_pf_3, motion_vectors_pf_3 = self.encoder.encode_predicted_frame(self.buffer_last_10_frames[3])
-        error_bf_1, motion_vectors_bd_1 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[1])
-        error_bf_2, motion_vectors_bd_2 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[2])
-        # Predicted Frame - Bidirectional Frame (block 2)
-        error_pf_6, motion_vectors_pf_6 = self.encoder.encode_predicted_frame(self.buffer_last_10_frames[6])
-        error_bf_4, motion_vectors_bd_4 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[4])
-        error_bf_5, motion_vectors_bd_5 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[5])
-        # Intra Frame 2
-        intra_frame_9 = self.encoder.encode_intra_frame(self.buffer_last_10_frames[9])
-        # Bidirectional Frame (block 3)
-        error_bf_7, motion_vectors_bd_7 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[7])
-        error_bf_8, motion_vectors_bd_8 = self.encoder.encode_bidirectional_frame(self.buffer_last_10_frames[8])
-        # Populating buffer to send
-        self.buffer_to_send.append((error_bf_1, motion_vectors_bd_1, "B"))
-        self.buffer_to_send.append((error_bf_2, motion_vectors_bd_2, "B"))
-        self.buffer_to_send.append((error_pf_3, motion_vectors_pf_3, "P"))
-        self.buffer_to_send.append((error_bf_4, motion_vectors_bd_4, "B"))
-        self.buffer_to_send.append((error_bf_5, motion_vectors_bd_5, "B"))
-        self.buffer_to_send.append((error_pf_6, motion_vectors_pf_6, "P"))
-        self.buffer_to_send.append((error_bf_7, motion_vectors_bd_7, "B"))
-        self.buffer_to_send.append((error_bf_8, motion_vectors_bd_8, "B"))
-        self.buffer_to_send.append((intra_frame_9, None, "I"))
-
-        self.buffer_last_10_frames = [self.buffer_last_10_frames[9]]
-
     def close(self) -> None:
-        # self.transmitter.send(None)
         self.transmitter.close()
+        self.reader.close()

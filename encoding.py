@@ -1,7 +1,6 @@
 from image import Image
 from jpeg import Jpeg
 from motion import MotionVectors, compute_motion_compensation, compute_motion_estimation
-import numpy as np
 
 class Encoder:
     def __init__(self, block_size: int = 16, window_size: int = 8) -> None:
@@ -32,7 +31,7 @@ class Encoder:
         encoded_err = Jpeg(err)
         if len(self.last_key_frames) >= 2:
             self.last_key_frames.pop(0)
-        error = encoded_err.decode(np.float32)
+        error = encoded_err.decode()
         error.switch_color_space("RGB")
         self.last_key_frames.append((error + mc))
 

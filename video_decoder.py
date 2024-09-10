@@ -1,11 +1,11 @@
 from decoding import Decoder
 from receiver import Receiver
-import matplotlib.pyplot as plt
 
 class VideoDecoder:
-    def __init__(self) -> None:
+    def __init__(self, print_frames = True) -> None:
         self.decoder = Decoder()
         self.frame_counter = 0
+        self.print_frames = print_frames
         self.receiver = Receiver(self.process_frame)
 
     def process_frame(self, data) -> bool:
@@ -19,4 +19,5 @@ class VideoDecoder:
                 frame = self.decoder.decode_predicted_frame(error, motion)
             if frame_type == "B":
                 frame = self.decoder.decode_bidirectional_frame(error, motion)
-            frame.print()
+            if self.print_frames:
+                frame.print()

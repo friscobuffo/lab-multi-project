@@ -26,6 +26,3 @@ class Transmitter:
             
     def __exit__(self):
         self.close()
-
-    
-

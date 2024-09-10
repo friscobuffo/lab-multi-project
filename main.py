@@ -1,5 +1,5 @@
 from video_decoder import VideoDecoder
-from video_encoder_prova import VideoEncoder
+from video_encoder import VideoEncoder
 import multiprocessing
 
 def encode():

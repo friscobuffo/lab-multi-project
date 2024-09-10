@@ -56,7 +56,8 @@ class Jpeg:
         self.original_shape = int(y.shape[0]), int(y.shape[1])
         return
     
-    def decode(self, dtype = np.uint8) -> Image:
+    def decode(self) -> Image:
+        dtype = np.float32
         # inverting rle
         y_zigzags = Jpeg._apply_irle(self.y_rle, np.float32)
         cb_zigzags = Jpeg._apply_irle(self.cb_rle, np.float32)
@@ -86,10 +87,6 @@ class Jpeg:
         image = Image(ycbcr, "YCbCr")
         image.switch_color_space("RGB")
         return image
-    
-    def saveToFile(self, filename: str) -> None:
-        np.savez_compressed(filename+".npz", y_rle=self.y_rle, cb_rle=self.cb_rle,
-                            cr_rle=self.cr_rle, shape=self.original_shape)
 
     @staticmethod
     def loadFromFile(filename: str):
