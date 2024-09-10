@@ -117,13 +117,13 @@ class Jpeg:
     @staticmethod
     def _upsample_matrix(matrix: np.ndarray, dtype):
         size = int(matrix.shape[0]*Jpeg.DOWNSAMPLE_FACTOR), int(matrix.shape[1]*Jpeg.DOWNSAMPLE_FACTOR)
-        output = np.ones(size, dtype=dtype)
+        output = np.ones(size, dtype=np.int32)
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
                 v = matrix[i,j]
                 output[i*Jpeg.DOWNSAMPLE_FACTOR : i*Jpeg.DOWNSAMPLE_FACTOR+Jpeg.DOWNSAMPLE_FACTOR,
                        j*Jpeg.DOWNSAMPLE_FACTOR : j*Jpeg.DOWNSAMPLE_FACTOR+Jpeg.DOWNSAMPLE_FACTOR] *= v
-        return output
+        return dtype(output)
     
     @staticmethod
     def _blockproc(matrix: np.ndarray, func, dtype):

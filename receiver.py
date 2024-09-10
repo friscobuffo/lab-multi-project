@@ -1,46 +1,51 @@
 import socket
 import pickle
+import struct
 
 class Receiver:
-    def __init__(self, host: str = 'localhost', port: int = 12345, timeout: float = 5.0) -> None:
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.soket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.soket.settimeout(self.timeout)
-        self.soket.bind((self.host, self.port))
-        self.soket.listen(1)
-        print('\033[1m' + '\033[92m' + "Receiver Listening..." + '\033[0m')
+    def __init__(self, callback) -> None:
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(('localhost', 9999))
+        self.server_socket.listen(1)
+        print("Waiting for a connection...")
+        self.conn, self.addr = self.server_socket.accept()
 
-    def accept_connection(self):
-            try:
-                self.connection, self.address = self.soket.accept()
-                print('\033[92m' + "Receiver connected to"+ '\033[0m', self.address)
-            except socket.timeout as e:
-                raise TimeoutError('\033[91m' + "Connection timed out while waiting for a client"+ '\033[0m') from e
-
-    def receive(self) -> any:
+        data = b""
+        payload_size = struct.calcsize("Q")
         try:
-            data = b""
             while True:
-                packet = self.connection.recv(4096)
-                if not packet:  # No more data, stop receiving
+                while len(data) < payload_size:
+                    packet = self.conn.recv(4096)
+                    if not packet:
+                        break
+                    data += packet
+                if len(data) < payload_size:
+                    continue
+                packed_msg_size = data[:payload_size]
+                data = data[payload_size:]
+                msg_size = struct.unpack("Q", packed_msg_size)[0]
+                while len(data) < msg_size:
+                    packet = self.conn.recv(4096)
+                    if not packet:
+                        break
+                    data += packet
+                if len(data) < msg_size:
+                    continue
+                obj_data = data[:msg_size]
+                data = data[msg_size:]
+                obj = pickle.loads(obj_data)
+                if data is None:
+                    print("Finished receiving...")
                     break
-                data += packet
-            print("received data")
-            return pickle.loads(data)  # Deserialize the received data
-        except (socket.error, pickle.UnpicklingError) as e:
-            raise ConnectionError("Failed to receive or decode data") from e
-
-    def close(self) -> None:
-        if self.connection:
-            self.connection.close()
-        if self.soket:
-            self.soket.close()
-            
-
-
-# Example usage:
-# with Receiver() as receiver:
-#     data = receiver.receive()
-#     print("Received:", data)
+                print("Received data...")
+                callback(obj)
+        except Exception as e:
+            print(f"Error: {e}")
+            print("Closing receiver connection...")
+            self.conn.close()
+            self.server_socket.close()
+            raise e
+        finally:
+            print("Closing receiver connection...")
+            self.conn.close()
+            self.server_socket.close()

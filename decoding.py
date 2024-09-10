@@ -8,11 +8,13 @@ class Decoder:
         self.block_size = block_size
 
     def decode_intra_frame(self, frame: Jpeg) -> Image:
+        print("Decoding intra frame...")
         decoded_frame = frame.decode()
         self.last_key_frame = decoded_frame
         return decoded_frame
 
     def decode_predicted_frame(self, err_frame: Jpeg, mvs: MotionVectors) -> Image:
+        print("Decoding predicted frame...")
         err = err_frame.decode()
         mc = compute_motion_compensation(self.last_key_frame, mvs, self.block_size)
         decoded_frame = err + mc
@@ -20,7 +22,8 @@ class Decoder:
         return decoded_frame
 
     def decode_bidirectional_frame(self, err_frame: Jpeg, mvs: MotionVectors) -> Image:
-        err = err_frame.decode
+        print("Decoding bidirectional frame...")
+        err = err_frame.decode()
         mc = compute_motion_compensation(self.last_key_frame, mvs, self.block_size)
         decoded_frame = err + mc
         return decoded_frame

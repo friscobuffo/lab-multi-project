@@ -9,39 +9,54 @@ class VideoEncoder:
         self.path = path
         self.encoder = Encoder()
         self.reader = VideoReader(path)
-        self.counter = 0
+        self.transmitter = Transmitter()
+        self.frame_counter = 0
         self.frame_buffer = []
         self.clear_buffer = False
+        self.send_buffer = []
 
     def encode_next_frame(self) -> any:
-        if self.counter == 0:
-            self.counter += 1
-            return self.encoder.encode_intra_frame(self.reader.next_frame())
+        if self.frame_counter == 0:
+            self.frame_counter += 1
+            return self.encoder.encode_intra_frame(self.reader.next_frame()), None, "I"
 
         if self.clear_buffer:
             curr_frame = self.frame_buffer.pop(0)
             if len(self.frame_buffer) == 0: self.clear_buffer = False
-            return self.encoder.encode_bidirectional_frame(curr_frame)
+            err, mvs = self.encoder.encode_bidirectional_frame(curr_frame)
+            return err, mvs, "B"
         
-        index = self.counter % 9
+        index = self.frame_counter % 9
         frame_type = VideoEncoder.FRAME_ORDER[index]
         curr_frame = self.reader.next_frame()
         if (curr_frame is None): return
 
-        self.counter += 1
+        self.frame_counter += 1
         if frame_type == "I":
-            print("I")
             self.clear_buffer = True
-            return self.encoder.encode_intra_frame(curr_frame)
+            return self.encoder.encode_intra_frame(curr_frame), None, "I"
         if frame_type == "P":
-            print("P")
             self.clear_buffer = True
-            return self.encoder.encode_predicted_frame(curr_frame)
+            err, mvs = self.encoder.encode_predicted_frame(curr_frame)
+            return err, mvs, "P"
         if frame_type == "B":
-            print("B")
             self.frame_buffer.append(curr_frame)
             return self.encode_next_frame()
+        
+    def send_next_frame(self) -> None:
+        data = self.encode_next_frame()
+        
+        if data[2] != "B":
+            self.send_buffer.append(data)
+            if len(self.send_buffer) != 0:
+                print("sending key frame")
+                self.transmitter.send(self.send_buffer.pop(0))
+            else:
+                return self.send_next_frame()
+        else:
+            print("sending bidirectional frame")
+            self.transmitter.send(data)
 
-
-
-
+    def close(self) -> None:
+        self.transmitter.send(None)
+        self.transmitter.close()
