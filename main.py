@@ -1,5 +1,5 @@
 from video_decoder import VideoDecoder
-from prova import VideoEncoder
+from video_encoder_prova import VideoEncoder
 import multiprocessing
 
 # def encode():
@@ -17,7 +17,7 @@ import multiprocessing
 #     decoder.close()
 
 if __name__ == "__main__":
-    encoder = VideoEncoder("test.mp4")
+    encoder = VideoEncoder("fast_test.mp4")
     print("encoding started")
     while (encoder.encode_next_frame()):
         pass
