@@ -22,14 +22,19 @@ class VideoEncoder:
 
         if self.clear_buffer:
             curr_frame = self.frame_buffer.pop(0)
-            if len(self.frame_buffer) == 0: self.clear_buffer = False
+            if not self.frame_buffer:
+                self.clear_buffer = False
             err, mvs = self.encoder.encode_bidirectional_frame(curr_frame)
             return err, mvs, "B"
         
-        index = self.frame_counter % 9
+        index = self.frame_counter % len(VideoEncoder.FRAME_ORDER)
         frame_type = VideoEncoder.FRAME_ORDER[index]
         curr_frame = self.reader.next_frame()
-        if (curr_frame is None): return None
+        if curr_frame is None: 
+            if self.frame_buffer:
+                return self.encoder.encode_intra_frame(self.frame_buffer.pop(0)), None, "I"
+            else:
+                return None
 
         self.frame_counter += 1
         if frame_type == "I":
@@ -48,18 +53,19 @@ class VideoEncoder:
         if data == None: return False
 
         if data[2] != "B":
-            self.send_buffer.append(data)
-            if len(self.send_buffer) != 0:
-                print("sending key frame")
+            if self.send_buffer:
+                print("Sending key frame...")
+                self.send_buffer.append(data)
                 self.transmitter.send(self.send_buffer.pop(0))
-                return True
             else:
+                self.send_buffer.append(data)
                 return self.send_next_frame()
         else:
-            print("sending bidirectional frame")
+            print("Sending bidirectional frame...")
             self.transmitter.send(data)
-            return True
+        
+        return True
 
     def close(self) -> None:
-        self.transmitter.send(None)
+        # self.transmitter.send(None)
         self.transmitter.close()

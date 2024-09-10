@@ -68,5 +68,5 @@ class VideoEncoder:
         self.buffer_last_10_frames = [self.buffer_last_10_frames[9]]
 
     def close(self) -> None:
-        self.transmitter.send(None)
+        # self.transmitter.send(None)
         self.transmitter.close()
