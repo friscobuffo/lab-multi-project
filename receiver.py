@@ -114,6 +114,6 @@ class Receiver:
         except Exception as e:
             print(f"Error while closing connection: {e}")
 
-    def __del__(self):
+    def __exit__(self):
         self.close()
         

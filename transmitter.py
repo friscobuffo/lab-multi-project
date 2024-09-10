@@ -24,7 +24,7 @@ class Transmitter:
             except socket.error as e:
                 raise ConnectionError("Failed to close the connection.") from e
             
-    def __del__(self):
+    def __exit__(self):
         self.close()
 
     
