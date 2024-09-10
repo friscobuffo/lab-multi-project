@@ -18,4 +18,5 @@ class VideoDecoder:
                 frame = self.decoder.decode_predicted_frame(error, motion)
             if frame_type == "B":
                 frame = self.decoder.decode_bidirectional_frame(error, motion)
+            frame.print()
     

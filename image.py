@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 class Image:
     COLOR_CONVERSIONS = {
@@ -39,9 +38,8 @@ class Image:
     
     def print(self) -> None:
         rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
-        plt.imshow(rgb)
-        plt.axis('off')
-        plt.show()
+        cv2.imshow('Video Frame', rgb)
+        cv2.waitKey(0)
 
     def __add__(self, other: 'Image') -> 'Image':
         if self.color_space != other.color_space:
