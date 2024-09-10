@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 class Image:
     COLOR_CONVERSIONS = {
@@ -36,10 +37,14 @@ class Image:
             self.image = cv2.cvtColor(self.image, Image.COLOR_CONVERSIONS[self.color_space][target_space])
             self.color_space = target_space
     
-    def print(self) -> None:
+    def print(self, ax, fig) -> None:
         rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
-        cv2.imshow('Video Frame', rgb)
-        cv2.waitKey(0)
+        ax.clear()  # Clear the previous image (if any)
+        ax.imshow(rgb)  # Plot the new image
+        ax.axis('off')  # Turn off axes
+        plt.draw()  # Update the plot
+        plt.pause(0.1)  # Short pause to ensure the image is rendered
+
 
     def __add__(self, other: 'Image') -> 'Image':
         if self.color_space != other.color_space:
