@@ -29,7 +29,7 @@ class VideoEncoder:
         index = self.frame_counter % 9
         frame_type = VideoEncoder.FRAME_ORDER[index]
         curr_frame = self.reader.next_frame()
-        if (curr_frame is None): return
+        if (curr_frame is None): return None
 
         self.frame_counter += 1
         if frame_type == "I":
@@ -45,17 +45,20 @@ class VideoEncoder:
         
     def send_next_frame(self) -> None:
         data = self.encode_next_frame()
-        
+        if data == None: return False
+
         if data[2] != "B":
             self.send_buffer.append(data)
             if len(self.send_buffer) != 0:
                 print("sending key frame")
                 self.transmitter.send(self.send_buffer.pop(0))
+                return True
             else:
                 return self.send_next_frame()
         else:
             print("sending bidirectional frame")
             self.transmitter.send(data)
+            return True
 
     def close(self) -> None:
         self.transmitter.send(None)
