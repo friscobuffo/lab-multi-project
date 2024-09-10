@@ -63,9 +63,9 @@ class VideoEncoder:
         else:
             print("Sending bidirectional frame...")
             self.transmitter.send(data)
-        
         return True
 
     def close(self) -> None:
-        # self.transmitter.send(None)
         self.transmitter.close()
+        self.reader.close()
+        print("Closed all encoder resources.")

@@ -61,7 +61,6 @@ class Receiver:
         self.server_socket.bind(('localhost', 9999))
         self.server_socket.listen(1)
         print("Waiting for a connection...")
-
         try:
             self.conn, self.addr = self.server_socket.accept()
             print(f"Connection established with {self.addr}")
@@ -114,4 +113,4 @@ class Receiver:
                 self.server_socket.close()
         except Exception as e:
             print(f"Error while closing connection: {e}")
-        print("Closed connection.")
+        

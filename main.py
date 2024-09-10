@@ -3,14 +3,16 @@ from video_encoder_prova import VideoEncoder
 import multiprocessing
 
 def encode():
-    encoder = VideoEncoder("fast_test.mp4")
+    encoder = VideoEncoder("super_fast_test.mp4")
     print("Encoding started...")
-    while (encoder.send_next_frame()):
+    while encoder.send_next_frame():
         pass
     encoder.close()
+    print("Encoding finished.")
 
 def decode():
     VideoDecoder()
+    print("Decoding finished.")
 
 if __name__ == "__main__":
     try:
@@ -20,8 +22,10 @@ if __name__ == "__main__":
         encoder_process.start()
         decoder_process.start()
 
-        encoder_process.join()
         decoder_process.join()
+        print("finished decoder")
+        encoder_process.join()
+        print("finished encoder")
         
     except KeyboardInterrupt as e:
         print("Exiting...")
