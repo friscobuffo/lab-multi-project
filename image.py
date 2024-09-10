@@ -37,13 +37,29 @@ class Image:
             self.image = cv2.cvtColor(self.image, Image.COLOR_CONVERSIONS[self.color_space][target_space])
             self.color_space = target_space
     
-    def print(self, ax, fig) -> None:
+    def print(self) -> None:
         rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
-        ax.clear()  # Clear the previous image (if any)
-        ax.imshow(rgb)  # Plot the new image
-        ax.axis('off')  # Turn off axes
-        plt.draw()  # Update the plot
-        plt.pause(0.1)  # Short pause to ensure the image is rendered
+        # ax.clear()  # Clear the previous image (if any)
+        # ax.imshow(rgb)  # Plot the new image
+        # ax.axis('off')  # Turn off axes
+        # plt.draw()  # Update the plot
+        # plt.pause(0.1)  # Short pause to ensure the image is rendered
+
+        # Define the key press event handler
+        def on_key(event):
+            print(f"Key pressed: {event.key}")
+            plt.close()  # Close the figure window when a key is pressed
+
+        # Display the image
+        fig, ax = plt.subplots()
+        ax.imshow(rgb)
+        ax.axis('off')  # Hide axis
+
+        # Connect the key press event to the callback function
+        fig.canvas.mpl_connect('key_press_event', on_key)
+
+        # Show the image and wait for the key event
+        plt.show()
 
 
     def __add__(self, other: 'Image') -> 'Image':

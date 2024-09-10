@@ -6,8 +6,6 @@ class VideoDecoder:
     def __init__(self) -> None:
         self.decoder = Decoder()
         self.frame_counter = 0
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
         self.receiver = Receiver(self.process_frame)
 
     def process_frame(self, data) -> bool:
@@ -21,4 +19,4 @@ class VideoDecoder:
                 frame = self.decoder.decode_predicted_frame(error, motion)
             if frame_type == "B":
                 frame = self.decoder.decode_bidirectional_frame(error, motion)
-            frame.print(self.ax, self.fig)
+            frame.print()
