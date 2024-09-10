@@ -13,7 +13,7 @@ class Transmitter:
         self.soket.settimeout(self.timeout)
         try:
             self.soket.connect((self.host, self.port))
-            print("transmitter connected")
+            print('\033[94m' + '\033[4m' + "Transmitter connected" + '\033[0m')
         except socket.error as e:
             raise ConnectionError(f"Failed to connect to {self.host}:{self.port}") from e
 
@@ -21,7 +21,7 @@ class Transmitter:
         try:
             message = pickle.dumps(obj)
             self.soket.sendall(message)
-            print("sent data")
+            print('\033[93m' + "sent data" + '\033[0m')
         except (socket.error, pickle.PicklingError) as e:
             raise ConnectionError("Failed to send data") from e
 

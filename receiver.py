@@ -10,11 +10,14 @@ class Receiver:
         self.soket.settimeout(self.timeout)
         self.soket.bind((self.host, self.port))
         self.soket.listen(1)
-        try:
-            self.connection, self.address = self.soket.accept()
-            print("receiver initilized")
-        except socket.timeout as e:
-            raise TimeoutError("Connection timed out while waiting for a client") from e
+        print('\033[1m' + '\033[92m' + "Receiver Listening..." + '\033[0m')
+
+    def accept_connection(self):
+            try:
+                self.connection, self.address = self.soket.accept()
+                print('\033[92m' + "Receiver connected to"+ '\033[0m', self.address)
+            except socket.timeout as e:
+                raise TimeoutError('\033[91m' + "Connection timed out while waiting for a client"+ '\033[0m') from e
 
     def receive(self) -> any:
         try:
@@ -34,6 +37,8 @@ class Receiver:
             self.connection.close()
         if self.soket:
             self.soket.close()
+            
+
 
 # Example usage:
 # with Receiver() as receiver:
