@@ -89,19 +89,6 @@ class Jpeg:
         return image
 
     @staticmethod
-    def loadFromFile(filename: str):
-        data = np.load(filename + '.npz', allow_pickle=True)
-        y_rle = data["y_rle"]
-        cb_rle = data["cb_rle"]
-        cr_rle = data["cr_rle"]
-        shape = int(data["shape"][0]), int(data["shape"][1])
-        jpeg = Jpeg(None)
-        jpeg.y_rle = y_rle
-        jpeg.cb_rle = cb_rle
-        jpeg.cr_rle = cr_rle
-        jpeg.original_shape = shape
-
-    @staticmethod
     def _downsample_matrix(matrix: np.ndarray, dtype):
         size = int(matrix.shape[0]/Jpeg.DOWNSAMPLE_FACTOR), int(matrix.shape[1]/Jpeg.DOWNSAMPLE_FACTOR)
         output = np.zeros(size, dtype=dtype)
@@ -313,9 +300,3 @@ class Jpeg:
         for i in range(0, rle_rows.shape[0]):
             matrix[i] = invert_run_length_encoding(rle_rows[i])
         return matrix
-
-    def apply_vlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
-        pass
-
-    def apply_ivlc(frame: np.ndarray, block_size: int = None) -> np.ndarray:
-        pass

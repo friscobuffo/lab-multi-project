@@ -50,7 +50,7 @@ class Image:
             self.image = Image.COLOR_CONVERSIONS[self.color_space][target_space](self.image)
             self.color_space = target_space
     
-    def print(self) -> None:
+    def print(self, close_on_key_press = True) -> None:
         rgb = np.stack(self.get_color_spaces("RGB"), axis=-1)
         rgb = np.clip(rgb, 0, 255).astype(np.uint8)
         def on_key(_):
@@ -59,7 +59,8 @@ class Image:
         fig, ax = plt.subplots()
         ax.imshow(rgb)
         ax.axis('off')
-        fig.canvas.mpl_connect('key_press_event', on_key)
+        if close_on_key_press:
+            fig.canvas.mpl_connect('key_press_event', on_key)
         plt.show()
 
     def __add__(self, other: 'Image') -> 'Image':
