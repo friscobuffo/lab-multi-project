@@ -132,9 +132,7 @@ Encoder --> Jpeg
 Encoder --> MotionVectors
 Encoder ..> Helper : uses
 
-Image --> np.ndarray
 VideoReader --> Image
-MotionVectors --> np.ndarray
 Transmitter ..> Compresser : uses
 
 @enduml
