@@ -1,8 +1,8 @@
 import cv2
-from image import Image
-from jpeg import Jpeg
+from image.image import Image
+from image.jpeg import Jpeg
 import pickle
-from compresser import Compresser
+from image.compresser import Compresser
 
 image = cv2.imread('peppers.jpeg', cv2.IMREAD_COLOR)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

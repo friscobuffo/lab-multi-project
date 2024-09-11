@@ -1,7 +1,7 @@
 import socket
 import struct
 import pickle
-from compresser import Compresser
+from image.compresser import Compresser
 
 class Receiver:
     def __init__(self, callback) -> None:

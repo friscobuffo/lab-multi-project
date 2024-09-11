@@ -1,5 +1,5 @@
-from decoding import Decoder
-from receiver import Receiver
+from decoding.decoding import Decoder
+from decoding.receiver import Receiver
 
 class VideoDecoder:
     def __init__(self, print_frames = True) -> None:

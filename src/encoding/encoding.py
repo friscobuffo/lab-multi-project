@@ -1,6 +1,6 @@
-from image import Image
-from jpeg import Jpeg
-from motion import MotionVectors, compute_motion_compensation, compute_motion_estimation
+from image.image import Image
+from image.jpeg import Jpeg
+from motion.motion import MotionVectors, compute_motion_compensation, compute_motion_estimation
 
 class Encoder:
     def __init__(self, block_size: int = 16, window_size: int = 8) -> None:

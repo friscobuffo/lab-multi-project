@@ -1,6 +1,6 @@
-from encoding import Encoder
-from transmitter import Transmitter
-from reader import VideoReader
+from encoding.encoding import Encoder
+from encoding.transmitter import Transmitter
+from encoding.reader import VideoReader
 
 class VideoEncoder:
     FRAME_ORDER = ["I", "B", "B", "P", "B", "B", "P", "B", "B"]

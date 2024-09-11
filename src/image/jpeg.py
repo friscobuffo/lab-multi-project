@@ -1,5 +1,5 @@
 import numpy as np
-from image import Image
+from image.image import Image
 import cv2
 
 class Jpeg:

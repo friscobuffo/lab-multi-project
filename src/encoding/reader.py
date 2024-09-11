@@ -1,5 +1,5 @@
 import cv2 as cv
-from image import Image
+from image.image import Image
 
 class VideoReader:
     def __init__(self, path: str) -> None:

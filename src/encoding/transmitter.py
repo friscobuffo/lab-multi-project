@@ -1,7 +1,7 @@
 import socket
 import pickle
 import struct
-from compresser import Compresser
+from image.compresser import Compresser
 
 class Transmitter:
     def __init__(self):
