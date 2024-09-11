@@ -23,6 +23,3 @@ class Transmitter:
                 print("Connection closed.")
             except socket.error as e:
                 raise ConnectionError("Failed to close the connection.") from e
-            
-    def __exit__(self):
-        self.close()
