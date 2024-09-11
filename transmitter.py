@@ -1,16 +1,21 @@
 import socket
 import pickle
 import struct
+from compresser import Compresser
 
 class Transmitter:
     def __init__(self):
+        self.compresser = Compresser()
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(('localhost', 9999))
     
     def send(self, obj: any) -> None:
         try:
             serialized = pickle.dumps(obj)
-            message = struct.pack("Q", len(serialized)) + serialized
+            serialized_compressed = self.compresser.compress(serialized)
+            compression_ratio = self.compresser.compute_compression_ratio(serialized, serialized_compressed)
+            print(f"VLC compression ratio: {compression_ratio:.2f}")
+            message = struct.pack("Q", len(serialized_compressed)) + serialized_compressed
             self.client_socket.sendall(message)
         except (socket.error, pickle.PicklingError) as e:
             raise ConnectionError("Failed to send data") from e

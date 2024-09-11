@@ -12,14 +12,15 @@ class _HuffmanNode:
         return self.freq < other.freq
     
 class Compresser:
-    def compress(self, bytes):
-        self.frequency = Counter(bytes)
+    def compress(self, bytes_data: bytes) -> bytes:
+        self.frequency = Counter(bytes_data)
         self.huffman_tree = self._build_huffman_tree()
         self.codebook = self._generate_huffman_codes(self.huffman_tree)
-        encoded_bytes = self._huffman_encode(bytes)
-        return encoded_bytes
+        encoded_bytes = self._huffman_encode(bytes_data)
+        return encoded_bytes.encode('utf-8')
     
-    def decompress(self, encoded_bytes):
+    def decompress(self, encoded_bytes:bytes) -> bytes:
+        encoded_bytes = encoded_bytes.decode('utf-8')
         return self._huffman_decode(encoded_bytes)
     
     def compute_compression_ratio(self, original_data, encoded_data):

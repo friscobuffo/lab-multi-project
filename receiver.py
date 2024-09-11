@@ -1,9 +1,11 @@
 import socket
 import struct
 import pickle
+from compresser import Compresser
 
 class Receiver:
     def __init__(self, callback) -> None:
+        self.compresser = Compresser()
         self.callback = callback
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('localhost', 9999))
@@ -43,8 +45,9 @@ class Receiver:
                         return
                     data += packet
 
-                obj_data = data[:msg_size]
+                compressed_obj_data = data[:msg_size]
                 data = data[msg_size:]
+                obj_data = self.compresser.decompress(compressed_obj_data)
                 obj = pickle.loads(obj_data)
                 self.callback(obj)
         except Exception as e:
